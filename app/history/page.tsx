@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-// 🌟 นำเข้าเครื่องมือทำกราฟจาก Recharts
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function HistoryPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -34,15 +33,12 @@ export default function HistoryPage() {
   // ==========================================
   // 🌟 ส่วนคำนวณข้อมูลสำหรับ Dashboard
   // ==========================================
-  // 1. คำนวณยอดขายรวมทั้งหมด และ จำนวนบิล
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((sum, order) => {
-    // คำนวณยอดรวมของแต่ละบิล
     const orderTotal = order.items.reduce((itemSum: number, item: any) => itemSum + (item.product.price * item.quantity), 0);
     return sum + orderTotal;
   }, 0);
 
-  // 2. คำนวณหาสินค้าขายดี (รวมยอดฮิตจากทุกบิล)
   const productStats: Record<string, { name: string, quantity: number, revenue: number }> = {};
   
   orders.forEach(order => {
@@ -56,10 +52,14 @@ export default function HistoryPage() {
     });
   });
 
-  // แปลงข้อมูลเป็น Array แล้วจัดเรียงจากขายดีสุดไปน้อยสุด (เอาแค่ Top 5)
+  // สำหรับกราฟ: ยังคงโชว์ Top 5 ตาม "รายได้" เหมือนเดิม
   const topProductsChartData = Object.values(productStats)
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
+
+  // 🌟 ใหม่: หาเมนูที่ "ขายดีที่สุด (ตามจำนวนชิ้น)" สำหรับแสดงบนการ์ดสรุป
+  const mostSoldProduct = Object.values(productStats)
+    .sort((a, b) => b.quantity - a.quantity)[0];
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">
@@ -82,7 +82,7 @@ export default function HistoryPage() {
           </div>
         ) : (
           <>
-            {/* 🌟 ส่วนที่ 1: การ์ดสรุปภาพรวม (Summary Cards) */}
+            {/* 🌟 ส่วนที่ 1: การ์ดสรุปภาพรวม */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 border-l-4 border-l-blue-500">
                 <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-2xl">💰</div>
@@ -98,19 +98,27 @@ export default function HistoryPage() {
                   <p className="text-2xl font-bold text-gray-800">{totalOrders} <span className="text-sm font-normal text-gray-500">รายการ</span></p>
                 </div>
               </div>
+              
+              {/* 🌟 การ์ดที่ 3 เปลี่ยนเป็น "เมนูที่ถูกขายมากที่สุด" */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 border-l-4 border-l-orange-500">
                 <div className="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center text-2xl">🏆</div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">เมนูที่ทำรายได้สูงสุด</p>
-                  <p className="text-xl font-bold text-gray-800 truncate max-w-[150px]">
-                    {topProductsChartData.length > 0 ? topProductsChartData[0].name : "-"}
+                  <p className="text-sm font-medium text-gray-500">เมนูที่ถูกขายมากที่สุด</p>
+                  <p className="text-xl font-bold text-gray-800 truncate max-w-[150px]" title={mostSoldProduct?.name}>
+                    {mostSoldProduct ? mostSoldProduct.name : "-"}
                   </p>
+                  {/* แสดงจำนวนชิ้นที่ขายได้กำกับไว้ด้วย */}
+                  {mostSoldProduct && (
+                    <p className="text-xs text-green-600 font-bold mt-1">
+                      ขายไปแล้ว {mostSoldProduct.quantity} รายการ
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* 🌟 ส่วนที่ 2: กราฟแท่ง 5 อันดับเมนูขายดี */}
+              {/* 🌟 ส่วนที่ 2: กราฟแท่ง */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <h2 className="text-lg font-bold text-gray-700 mb-6">📈 5 อันดับเมนูขายดี (ตามรายได้)</h2>
                 {topProductsChartData.length > 0 ? (
@@ -123,7 +131,7 @@ export default function HistoryPage() {
                         <Tooltip 
                           cursor={{ fill: '#F3F4F6' }}
                           contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                          formatter={(value: number) => [`฿${value.toLocaleString()}`, 'รายได้']}
+                          formatter={(value: any) => [`฿${Number(value).toLocaleString()}`, 'รายได้']}
                         />
                         <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} name="รายได้ (บาท)" barSize={40} />
                       </BarChart>
@@ -134,7 +142,7 @@ export default function HistoryPage() {
                 )}
               </div>
 
-              {/* 🌟 ส่วนที่ 3: รายการประวัติบิล (แบบเดิมที่ปรับให้สวยขึ้น) */}
+              {/* 🌟 ส่วนที่ 3: รายการประวัติบิล */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
                 <h2 className="text-lg font-bold text-gray-700 mb-4">📝 ประวัติบิลล่าสุด</h2>
                 <div className="flex-1 overflow-y-auto space-y-4 pr-2">
