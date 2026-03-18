@@ -24,3 +24,19 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@media print {
+  @page {
+    /* กำหนดขนาดกระดาษเป็น 80mm (ความยาวตั้งเป็น auto ให้ไหลตามเนื้อหา) */
+    size: 80mm auto; 
+    
+    /* ลบขอบกระดาษทิ้ง เพื่อไม่ให้เบราว์เซอร์ใส่ Header/Footer (พวกวันที่ หรือ URL) */
+    margin: 0mm; 
+  }
+
+  body {
+    /* บังคับให้พื้นหลังเป็นสีขาวเสมอตอนปริ้นท์ */
+    background-color: white !important;
+    -webkit-print-color-adjust: exact;
+  }
+}
