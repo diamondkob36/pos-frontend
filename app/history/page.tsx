@@ -26,7 +26,9 @@ export default function HistoryPage() {
   }, []);
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return "-"; // 🌟 ดักจับถ้าไม่มีวันที่
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "-"; // 🌟 ดักจับถ้าวันที่พัง (กันบั๊ก 1 ม.ค. 2513)
     return date.toLocaleString('th-TH', { 
       year: 'numeric', month: 'short', day: 'numeric', 
       hour: '2-digit', minute: '2-digit' 
@@ -174,19 +176,26 @@ export default function HistoryPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={topProductsChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                        <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} tickFormatter={(value) => `฿${value}`} />
+                        
+                        {/* 🌟 เปลี่ยน fill จาก '#6B7280' เป็น '#000000' (สีดำ) */}
+                        <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#000000' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 12, fill: '#000000' }} axisLine={false} tickLine={false} tickFormatter={(value) => `฿${value}`} />
+                        
                         <Tooltip 
                           cursor={{ fill: '#F3F4F6' }}
-                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                          contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                          /* 🌟 1. เปลี่ยนสีชื่อเมนู (หัวกล่อง) เป็นสีดำ */
+                          labelStyle={{ color: '#000000', fontWeight: 'bold' }}
+                          /* 🌟 2. เปลี่ยนสีบรรทัด "รายได้ : ฿XXX" เป็นสีดำ */
+                          itemStyle={{ color: '#3B82F6' }}
                           formatter={(value: any) => [`฿${Number(value).toLocaleString()}`, 'รายได้']}
                         />
-                        <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} name="รายได้ (บาท)" barSize={40} />
+                        <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} name="รายได้ (บาท)" barSize={40}/>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-72 flex items-center justify-center text-gray-400">ไม่มีข้อมูลในช่วงเวลานี้</div>
+                  <div className="h-72 flex items-center justify-center text-gray-950">ไม่มีข้อมูลในช่วงเวลานี้</div>
                 )}
               </div>
 
@@ -203,18 +212,27 @@ export default function HistoryPage() {
                         <div key={order.id} className="border border-gray-100 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all bg-gray-50">
                           <div className="flex justify-between items-start mb-2">
                             <div>
-                              <span className="font-bold text-gray-700 bg-white px-2 py-1 rounded text-xs border mr-2">#{order.id}</span>
+                              <span className="font-bold text-gray-700 bg-white px-2 py-1 rounded text-xs border mr-2">
+                                #{order.dailyNumber || order.id || "?"}
+                              </span>
                               <span className="text-xs text-gray-500">{formatDate(order.createdAt)}</span>
                             </div>
                             <div className="font-bold text-blue-600">฿{orderTotal.toLocaleString()}</div>
                           </div>
                           <div className="space-y-1">
-                            {order.items.map((item: any, index: number) => (
-                              <div key={index} className="flex justify-between text-gray-600 text-xs">
-                                <span>{item.product.name} <span className="text-gray-400 ml-1">x{item.quantity}</span></span>
-                                <span>฿{item.product.price * item.quantity}</span>
-                              </div>
-                            ))}
+                            {order.items?.map((item: any, index: number) => {
+                              // 🌟 ระบบกันพัง: ดักจับข้อมูลเก่าที่อาจจะเสีย
+                              const pName = item.product?.name || "สินค้าไม่ทราบชื่อ";
+                              const pPrice = item.product?.price || 0;
+                              const pQty = item.quantity || 1;
+                              
+                              return (
+                                <div key={index} className="flex justify-between text-gray-600 text-xs">
+                                  <span>{pName} <span className="text-gray-400 ml-1">x{pQty}</span></span>
+                                  <span>฿{pPrice * pQty}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );

@@ -75,7 +75,6 @@ export default function Home() {
   };
 
   const confirmAndSaveOrder = async () => {
-    // ป้องกันการกดยืนยันถ้าเงินไม่พอ (เผื่อไว้)
     if (!isEnoughCash) return;
 
     const orderPayload = {
@@ -96,9 +95,14 @@ export default function Home() {
       if (response.ok) {
         const savedOrder = await response.json();
         
-        // 🌟 เพิ่มข้อมูลเงินรับและเงินทอนเข้าไปในใบเสร็จ
+        // 🌟 ล็อกข้อมูลตะกร้าและยอดเงิน ณ วินาทีนี้ เพื่อป้องกัน undefined
+        const finalCart = [...cart];
+        const finalTotal = totalPrice;
+        
+        // 🌟 ตอนเก็บข้อมูลใบเสร็จ ให้เพิ่ม dailyNumber เข้าไปด้วย
         setReceiptData({
           id: savedOrder.id,
+          dailyNumber: savedOrder.dailyNumber || savedOrder.id || "-", // 👈 เพิ่มบรรทัดนี้
           date: new Date().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }),
           items: [...cart],
           total: totalPrice,
@@ -305,7 +309,7 @@ export default function Home() {
                   <h2 className="text-2xl font-bold text-gray-800 print:text-lg print:text-black">ใบเสร็จรับเงิน</h2>
                   <p className="text-gray-500 text-sm mt-1 print:text-[10px] print:text-black">My POS Store Co., Ltd.</p>
                   <div className="text-sm text-gray-500 mt-4 flex justify-between print:text-[10px] print:mt-2 print:text-black">
-                    <span>บิลเลขที่: #{receiptData.id}</span>
+                    <span>บิลเลขที่: #{receiptData.dailyNumber}</span>
                     <span>{receiptData.date}</span>
                   </div>
                 </div>
