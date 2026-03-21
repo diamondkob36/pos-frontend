@@ -55,24 +55,34 @@ export default function HistoryPage() {
   });
 
   // ==========================================
-  // 🌟 ส่วนคำนวณข้อมูลสำหรับ Dashboard (ใช้ filteredOrders แทน orders)
+  // 🌟 ส่วนคำนวณข้อมูลสำหรับ Dashboard (เวอร์ชันอัปเกรด ป้องกันกราฟพัง)
   // ==========================================
   const totalOrders = filteredOrders.length;
+  
   const totalRevenue = filteredOrders.reduce((sum, order) => {
-    const orderTotal = order.items.reduce((itemSum: number, item: any) => itemSum + (item.product.price * item.quantity), 0);
+    // ป้องกันกรณี order.items ไม่มีข้อมูล
+    const orderTotal = (order.items || []).reduce((itemSum: number, item: any) => {
+      const price = item.product?.price || 0; // ถ้าไม่มีราคาให้ตีเป็น 0
+      return itemSum + (price * item.quantity);
+    }, 0);
     return sum + orderTotal;
   }, 0);
 
   const productStats: Record<string, { name: string, quantity: number, revenue: number }> = {};
   
   filteredOrders.forEach(order => {
+    if (!order.items) return; // ถ้าบิลนี้ไม่มีสินค้า ให้ข้ามไปเลย
+    
     order.items.forEach((item: any) => {
-      const pName = item.product.name;
+      // ดักจับกรณีที่ชื่อหรือราคาสินค้ามีปัญหา (เช่น สินค้าถูกลบไปแล้ว)
+      const pName = item.product?.name || "สินค้าไม่ทราบชื่อ";
+      const pPrice = item.product?.price || 0;
+
       if (!productStats[pName]) {
         productStats[pName] = { name: pName, quantity: 0, revenue: 0 };
       }
-      productStats[pName].quantity += item.quantity;
-      productStats[pName].revenue += (item.product.price * item.quantity);
+      productStats[pName].quantity += (item.quantity || 1);
+      productStats[pName].revenue += (pPrice * (item.quantity || 1));
     });
   });
 
