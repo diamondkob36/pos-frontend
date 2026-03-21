@@ -3,373 +3,443 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+// 🌟 กฎพื้นฐาน (Structure) ของแต่ละหมวดหมู่ (ดึงเฉพาะท็อปปิ้งจาก DB)
+const MENU_CONFIG: Record<string, any> = {
+  beverage: {
+    label: "เครื่องดื่ม",
+    hasType: true, 
+    types: [
+      { name: "ร้อน", price: -5 },
+      { name: "เย็น", price: 0 },
+      { name: "ปั่น", price: 10 },
+    ],
+    hasSize: true,
+    sizes: {
+      normal: [
+        { name: "S", price: -5 },
+        { name: "M", price: 0 },
+        { name: "L", price: 5 },
+      ],
+      hot: [
+        { name: "ร้อน 8oz", price: 0 },
+        { name: "ร้อน 12oz", price: 10 },
+      ]
+    }
+  },
+  dessert: {
+    label: "ขนมหวาน",
+    hasType: false,
+    types: [], 
+    hasSize: true, 
+    sizes: {
+      normal: [
+        { name: "ขนาดปกติ", price: 0 },
+        { name: "ชิ้นใหญ่พิเศษ", price: 20 },
+      ],
+      hot: [] 
+    }
+  }
+};
+
 export default function Home() {
   const [cart, setCart] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [dbToppings, setDbToppings] = useState<any[]>([]); // 🌟 เก็บข้อมูลท็อปปิ้งจาก DB
   const [isLoading, setIsLoading] = useState(true);
 
-  // State ควบคุมหน้าต่าง
+  // State Checkout
   const [isConfirming, setIsConfirming] = useState(false);
   const [receiptData, setReceiptData] = useState<any | null>(null);
-
-  // 🌟 State ใหม่: สำหรับเก็บจำนวนเงินที่รับมาจากลูกค้า
   const [amountReceived, setAmountReceived] = useState<string>("");
 
+  // State Modal
+  const [optionModalOpen, setOptionModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [activeCategory, setActiveCategory] = useState<string>("beverage");
+  
+  const [selectedType, setSelectedType] = useState<any>(null);
+  const [selectedSize, setSelectedSize] = useState<any>(null);
+  const [selectedToppings, setSelectedToppings] = useState<{name: string, price: number}[]>([]);
+  
+  const [note, setNote] = useState("");
+  const [customToppingName, setCustomToppingName] = useState("");
+  const [customToppingPrice, setCustomToppingPrice] = useState("");
+
+  // 🌟 โหลดทั้งสินค้าและท็อปปิ้งตอนเปิดหน้า
   useEffect(() => {
-    fetch("http://localhost:3001/products")
-      .then((res) => res.json())
-      .then((data) => {
-        setProducts(data);
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("ดึงข้อมูลไม่สำเร็จ:", error);
-        setIsLoading(false);
-      });
+    Promise.all([
+      fetch("http://localhost:3001/products").then(res => res.json()),
+      fetch("http://localhost:3001/toppings").then(res => res.json())
+    ]).then(([productsData, toppingsData]) => {
+      setProducts(productsData);
+      setDbToppings(toppingsData);
+      setIsLoading(false);
+    }).catch(console.error);
   }, []);
 
-  const addToCart = (product: any) => {
+  const openOptionModal = (product: any) => {
+    setSelectedProduct(product);
+    
+    // 🌟 ดึงหมวดหมู่จากฐานข้อมูลตรงๆ ไม่ต้องเดาจากชื่อแล้ว!
+    const category = product.category || "beverage";
+    setActiveCategory(category);
+    const config = MENU_CONFIG[category];
+
+    if (config.hasType) {
+      setSelectedType(config.types.find((t: any) => t.name === "เย็น")); 
+    } else {
+      setSelectedType(null);
+    }
+
+    if (config.hasSize) {
+      setSelectedSize(config.sizes.normal.find((s: any) => s.price === 0) || config.sizes.normal[0]);
+    } else {
+      setSelectedSize(null);
+    }
+
+    setSelectedToppings([]);
+    setNote("");
+    setCustomToppingName("");
+    setCustomToppingPrice("");
+    setOptionModalOpen(true);
+  };
+
+  const handleTypeChange = (type: any) => {
+    setSelectedType(type);
+    const config = MENU_CONFIG[activeCategory];
+    if (type.name === "ร้อน") {
+      setSelectedSize(config.sizes.hot[0]); 
+    } else {
+      setSelectedSize(config.sizes.normal.find((s: any) => s.price === 0) || config.sizes.normal[0]);
+    }
+  };
+
+  const removeTopping = (toppingName: string) => {
+    setSelectedToppings(selectedToppings.filter(t => t.name !== toppingName));
+  };
+
+  const addCustomTopping = () => {
+    if (customToppingName && customToppingPrice) {
+      setSelectedToppings([...selectedToppings, { name: customToppingName, price: Number(customToppingPrice) }]);
+      setCustomToppingName(""); setCustomToppingPrice("");
+    }
+  };
+
+  const confirmAddToCart = () => {
+    const typePrice = selectedType ? selectedType.price : 0;
+    const sizePrice = selectedSize ? selectedSize.price : 0;
+    const toppingsPrice = selectedToppings.reduce((sum, t) => sum + t.price, 0);
+    
+    const finalPrice = selectedProduct.price + typePrice + sizePrice + toppingsPrice;
+    const toppingsString = selectedToppings.map(t => t.name).join(", ");
+    
+    let combinedSizeText = "";
+    if (selectedType) combinedSizeText += `${selectedType.name} `;
+    if (selectedSize) combinedSizeText += `(${selectedSize.name})`;
+    combinedSizeText = combinedSizeText.trim();
+
+    const cartKey = `${selectedProduct.id}-${combinedSizeText}-${toppingsString}-${note}`;
+
     setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === product.id);
+      const existingItem = prevCart.find((item) => item.cartKey === cartKey);
       if (existingItem) {
-        return prevCart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
+        return prevCart.map((item) => item.cartKey === cartKey ? { ...item, quantity: item.quantity + 1 } : item);
       } else {
-        return [...prevCart, { ...product, quantity: 1 }];
+        return [...prevCart, { 
+          cartKey, id: selectedProduct.id, name: selectedProduct.name,
+          basePrice: selectedProduct.price, price: finalPrice, 
+          size: combinedSizeText || "-", toppings: toppingsString, note, quantity: 1
+        }];
       }
     });
+    setOptionModalOpen(false); 
   };
 
-  const removeFromCart = (productId: number) => {
+  const removeFromCart = (cartKey: string) => {
     setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === productId);
-      if (existingItem?.quantity === 1) {
-        return prevCart.filter((item) => item.id !== productId);
-      } else {
-        return prevCart.map((item) =>
-          item.id === productId ? { ...item, quantity: item.quantity - 1 } : item
-        );
-      }
+      const existingItem = prevCart.find((item) => item.cartKey === cartKey);
+      if (existingItem?.quantity === 1) return prevCart.filter((item) => item.cartKey !== cartKey);
+      return prevCart.map((item) => item.cartKey === cartKey ? { ...item, quantity: item.quantity - 1 } : item);
     });
   };
 
-  const clearCart = () => {
-    setCart([]);
-  };
-
+  const clearCart = () => setCart([]);
   const totalPrice = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-
-  // 🌟 คำนวณเงินทอนแบบ Real-time
   const numericAmount = parseFloat(amountReceived) || 0;
   const changeAmount = numericAmount - totalPrice;
-  const isEnoughCash = numericAmount >= totalPrice; // เช็คว่าเงินพอจ่ายไหม
+  const isEnoughCash = numericAmount >= totalPrice;
 
   const handleCheckoutClick = () => {
-    if (cart.length === 0) {
-      alert("ยังไม่มีสินค้าในตะกร้าครับ!");
-      return;
-    }
-    setAmountReceived(""); // ล้างช่องกรอกเงินทุกครั้งที่เปิดหน้าต่างใหม่
-    setIsConfirming(true);
+    if (cart.length === 0) return alert("ยังไม่มีสินค้าในตะกร้าครับ!");
+    setAmountReceived(""); setIsConfirming(true);
   };
 
   const confirmAndSaveOrder = async () => {
     if (!isEnoughCash) return;
-
     const orderPayload = {
       items: cart.map((item) => ({
-        productId: item.id,
-        quantity: item.quantity,
-        price: item.price
+        productId: item.id, quantity: item.quantity, price: item.price, 
+        size: item.size === "-" ? null : item.size, toppings: item.toppings || null, note: item.note || null,
       }))
     };
 
     try {
       const response = await fetch('http://localhost:3001/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderPayload),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderPayload),
       });
 
       if (response.ok) {
         const savedOrder = await response.json();
-        
-        // 🌟 ล็อกข้อมูลตะกร้าและยอดเงิน ณ วินาทีนี้ เพื่อป้องกัน undefined
-        const finalCart = [...cart];
-        const finalTotal = totalPrice;
-        
-        // 🌟 ตอนเก็บข้อมูลใบเสร็จ ให้เพิ่ม dailyNumber เข้าไปด้วย
         setReceiptData({
-          id: savedOrder.id,
-          dailyNumber: savedOrder.dailyNumber || savedOrder.id || "-", // 👈 เพิ่มบรรทัดนี้
+          id: savedOrder.id, dailyNumber: savedOrder.dailyNumber || savedOrder.id || "-", 
           date: new Date().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }),
-          items: [...cart],
-          total: totalPrice,
-          received: numericAmount,
-          change: changeAmount
+          items: [...cart], total: totalPrice, received: numericAmount, change: changeAmount
         });
-        
         setIsConfirming(false);
-
-      } else {
-        alert("เกิดข้อผิดพลาดในการบันทึกบิลครับ ❌");
-      }
+      } else alert("เกิดข้อผิดพลาดในการบันทึกบิลครับ ❌");
     } catch (error) {
-      console.error("Error saving order:", error);
       alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์หลังบ้านได้ครับ");
     }
   };
 
-  const handleCloseReceiptAndFinish = () => {
-    setReceiptData(null);
-    setAmountReceived("");
-    clearCart();
-  };
-
-  // 🌟 ฟังก์ชันจัดการเมื่อคลิกพื้นที่ว่างรอบๆ กล่อง (Backdrop)
-  const handleBackdropClick = () => {
-    if (isConfirming) {
-      setIsConfirming(false);
-      setAmountReceived("");
-    } else if (receiptData) {
-      handleCloseReceiptAndFinish();
-    }
-  };
+  // 🌟 ฟิลเตอร์ท็อปปิ้งให้ตรงกับหมวดหมู่ที่กดเข้ามา
+  const currentCategoryToppings = dbToppings.filter(t => t.category === activeCategory);
 
   return (
     <main className="min-h-screen bg-gray-100 p-8 print:bg-white print:p-0">
-      
       <div className="print:hidden">
-        {/* แถบเมนูด้านบน */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-3xl font-bold text-gray-800">ระบบ POS - หน้าจอแคชเชียร์</h1>
           <div className="flex gap-3">
-            <Link href="/history" className="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold shadow-sm border border-blue-200 hover:bg-blue-50 transition-colors">
-              📊 ประวัติยอดขาย
-            </Link>
-            <Link href="/admin" className="bg-gray-800 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-gray-900 transition-colors">
-              ⚙️ จัดการหลังร้าน
-            </Link>
+            <Link href="/history" className="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold shadow-sm border border-blue-200 hover:bg-blue-50 transition-colors">📊 ประวัติยอดขาย</Link>
+            <Link href="/admin" className="bg-gray-800 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-gray-900 transition-colors">⚙️ จัดการหลังร้าน</Link>
           </div>
         </div>
 
-        {/* สินค้า และ ตะกร้า */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <h2 className="text-xl font-bold text-gray-700 mb-4">เมนูสินค้า</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {isLoading ? (
-                <div className="col-span-full flex justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                </div>
+                <div className="col-span-full flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
               ) : (
                 products.map((product) => (
-                  <div key={product.id} onClick={() => addToCart(product)} className="bg-white p-4 rounded-xl shadow-sm cursor-pointer transition-all active:scale-95 ring-0 hover:ring-4 hover:ring-blue-500 border border-transparent">
+                  <div key={product.id} onClick={() => openOptionModal(product)} className="bg-white p-4 rounded-xl shadow-sm cursor-pointer transition-all active:scale-95 hover:ring-4 hover:ring-blue-500 border border-transparent">
                     <img src={product.image} alt={product.name} className="w-full h-32 object-cover rounded-lg mb-4" />
                     <h3 className="text-md font-semibold text-gray-700">{product.name}</h3>
-                    <p className="text-blue-600 font-bold mt-1">฿{product.price}</p>
+                    <div className="flex justify-between items-end mt-1">
+                      <p className="text-blue-600 font-bold">เริ่มต้น ฿{product.price}</p>
+                      <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{product.category === 'dessert' ? '🍰' : '🥤'}</span>
+                    </div>
                   </div>
                 ))
               )}
             </div>
           </div>
 
+          {/* โซนตะกร้าและชำระเงิน (คงเดิม) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm min-h-[400px] flex flex-col">
             <div className="flex justify-between items-center mb-4 border-b pb-2">
               <h2 className="text-xl font-bold text-gray-800">ออเดอร์ปัจจุบัน</h2>
-              {cart.length > 0 && (
-                <button onClick={clearCart} className="text-sm text-red-500 hover:text-red-700 font-medium transition-colors hover:underline">ล้างตะกร้าทั้งหมด</button>
-              )}
+              {cart.length > 0 && <button onClick={clearCart} className="text-sm text-red-500 hover:text-red-700 font-medium">ล้างตะกร้าทั้งหมด</button>}
             </div>
-            
-            <div className="space-y-4 mb-6 flex-1 overflow-y-auto">
-              {cart.length === 0 ? (
-                <p className="text-gray-400 text-center py-4">ยังไม่มีสินค้าในตะกร้า</p>
-              ) : (
-                cart.map((item, index) => (
-                  <div key={index} className="flex justify-between items-center border-b pb-3 border-gray-100 last:border-0">
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-700">{item.name}</p>
-                      <p className="text-sm text-gray-500">฿{item.price} x {item.quantity}</p>
+            <div className="space-y-4 mb-6 flex-1 overflow-y-auto pr-2">
+              {cart.length === 0 ? <p className="text-gray-400 text-center py-4">ยังไม่มีสินค้าในตะกร้า</p> : cart.map((item) => (
+                <div key={item.cartKey} className="flex justify-between items-start border-b pb-3 border-gray-100 last:border-0">
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800">{item.name}</p>
+                    <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                      {item.size !== "-" && <p>• {item.size}</p>}
+                      {item.toppings && <p>• ท็อปปิ้ง: {item.toppings}</p>}
+                      {item.note && <p className="text-orange-600 font-medium">หมายเหตุ: {item.note}</p>}
                     </div>
-                    <div className="flex items-center gap-4">
-                      <p className="font-bold text-gray-800">฿{item.price * item.quantity}</p>
-                      <button onClick={() => removeFromCart(item.id)} className="bg-red-50 text-red-500 px-3 py-1 rounded-lg text-sm font-medium hover:bg-red-100 hover:text-red-600 transition-colors active:scale-95">ลบ</button>
-                    </div>
+                    <p className="text-sm text-blue-600 font-medium mt-1">฿{item.price} x {item.quantity}</p>
                   </div>
-                ))
-              )}
+                  <div className="flex flex-col items-end gap-2">
+                    <p className="font-bold text-gray-800">฿{item.price * item.quantity}</p>
+                    <button onClick={() => removeFromCart(item.cartKey)} className="bg-red-50 text-red-500 px-3 py-1 rounded-lg text-xs font-medium hover:bg-red-100">ลบออก</button>
+                  </div>
+                </div>
+              ))}
             </div>
-
             {cart.length > 0 && (
               <div className="mt-auto pt-6 border-t border-gray-200">
-                <div className="flex justify-between items-center mb-6">
-                  <span className="text-lg font-bold text-gray-700">ยอดรวมสุทธิ</span>
-                  <span className="text-3xl font-bold text-blue-600">฿{totalPrice}</span>
-                </div>
-                <button 
-                  onClick={handleCheckoutClick}
-                  className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-md flex justify-center items-center gap-2 hover:bg-blue-800 transition-colors duration-300 ease-in-out active:scale-95"
-                >
-                  ชำระเงิน
-                </button>
+                <div className="flex justify-between items-center mb-6"><span className="text-lg font-bold text-gray-700">ยอดรวมสุทธิ</span><span className="text-3xl font-bold text-blue-600">฿{totalPrice}</span></div>
+                <button onClick={handleCheckoutClick} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-md hover:bg-blue-800 active:scale-95 transition-all">ชำระเงิน</button>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* ส่วนที่ 2: Pop-up ยืนยันชำระเงิน & ใบเสร็จ (Modal) */}
-      {/* ========================================== */}
-      {(isConfirming || receiptData) && (
-        // 🌟 พื้นหลังกระจกฝ้า พร้อม onClick สำหรับปิดเมื่อกดนอกกรอบ
-        <div 
-          className="fixed inset-0 bg-white/40 flex items-center justify-center z-50 backdrop-blur-md print:static print:bg-white print:block"
-          onClick={handleBackdropClick}
-        >
-          
-          {/* 🌟 กล่องเนื้อหาตรงกลาง (ใส่ onClick e.stopPropagation() เพื่อไม่ให้กล่องปิดเวลากดข้างในกล่อง) */}
-          <div 
-            className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-100 print:max-w-full print:shadow-none print:p-0 print:m-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            
-            {/* 🌟 โหมดที่ 1: ตรวจสอบและกรอกเงินรับมา */}
-            {isConfirming && (
-              <>
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-800">สรุปยอดชำระเงิน</h2>
-                </div>
-
-                <div className="border-t-2 border-b-2 border-gray-100 py-4 mb-4 space-y-3 max-h-40 overflow-y-auto">
-                  {cart.map((item: any, index: number) => (
-                    <div key={index} className="flex justify-between text-gray-700 text-sm">
-                      <span>{item.name} <span className="text-gray-400">x{item.quantity}</span></span>
-                      <span>฿{item.price * item.quantity}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ส่วนคำนวณเงิน */}
-                <div className="bg-gray-50 p-4 rounded-xl mb-6">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-gray-600 font-medium">ยอดที่ต้องชำระ</span>
-                    <span className="text-xl font-bold text-gray-800">฿{totalPrice}</span>
-                  </div>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-gray-600 font-medium">รับเงินมา (บาท)</span>
-                    <input 
-                      type="number"
-                      value={amountReceived}
-                      onChange={(e) => setAmountReceived(e.target.value)}
-                      className="w-28 p-2 text-right border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-lg text-blue-600"
-                      placeholder="0"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                    <span className="text-gray-600 font-medium">เงินทอน</span>
-                    <span className={`font-bold text-xl ${changeAmount >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      ฿{changeAmount > 0 ? changeAmount : 0}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => { setIsConfirming(false); setAmountReceived(""); }} 
-                    className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors"
-                  >
-                    ยกเลิก
-                  </button>
-                  {/* 🌟 ปรับปรุงปุ่มยืนยัน: ถ้าเงินรับมาน้อยกว่ายอดรวม จะกดไม่ได้และเป็นสีเทา */}
-                  <button 
-                    onClick={confirmAndSaveOrder} 
-                    disabled={!isEnoughCash}
-                    className={`flex-1 py-3 rounded-xl font-bold shadow-md transition-colors ${
-                      isEnoughCash 
-                        ? 'bg-green-600 text-white hover:bg-green-700' 
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-70'
-                    }`}
-                  >
-                    ✅ ยืนยันรับเงิน
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* 🌟 โหมดที่ 2: ใบเสร็จรับเงิน */}
-            {receiptData && (
-              <div className="print:w-[80mm] print:mx-auto print:bg-white print:text-black">
-                
-                {/* ส่วนหัวใบเสร็จ */}
-                <div className="text-center mb-6 print:mb-2">
-                  <h2 className="text-2xl font-bold text-gray-800 print:text-lg print:text-black">ใบเสร็จรับเงิน</h2>
-                  <p className="text-gray-500 text-sm mt-1 print:text-[10px] print:text-black">My POS Store Co., Ltd.</p>
-                  <div className="text-sm text-gray-500 mt-4 flex justify-between print:text-[10px] print:mt-2 print:text-black">
-                    <span>บิลเลขที่: #{receiptData.dailyNumber}</span>
-                    <span>{receiptData.date}</span>
-                  </div>
-                </div>
-
-                {/* ส่วนรายการสินค้า */}
-                <div className="border-t-2 border-b-2 border-dashed border-gray-200 py-4 mb-4 space-y-3 print:py-2 print:mb-2 print:space-y-1 print:border-black">
-                  {receiptData.items.map((item: any, index: number) => (
-                    <div key={index} className="flex justify-between text-gray-700 text-sm print:text-[12px] print:text-black">
-                      <span>{item.name} <span className="text-gray-400 print:text-gray-600">x{item.quantity}</span></span>
-                      <span>฿{item.price * item.quantity}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ส่วนสรุปยอดเงิน */}
-                <div className="mb-8 print:mb-4">
-                  <div className="flex justify-between items-center text-lg font-bold text-gray-800 mb-2 print:text-sm print:mb-1 print:text-black">
-                    <span>ยอดรวมทั้งสิ้น</span>
-                    <span>฿{receiptData.total}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm text-gray-600 mb-1 print:text-[12px] print:text-black">
-                    <span>รับเงินมา</span>
-                    <span>฿{receiptData.received}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm text-gray-600 print:text-[12px] print:text-black">
-                    <span>เงินทอน</span>
-                    <span>฿{receiptData.change}</span>
-                  </div>
-                </div>
-
-                {/* 🌟 เพิ่มส่วนท้ายบิล (คำขอบคุณ) */}
-                <div className="text-center text-sm text-gray-500 mb-6 print:text-[10px] print:text-black print:mb-0">
-                  <p>ขอบคุณที่ใช้บริการครับ/ค่ะ</p>
-                  <p className="mt-1">Please come again</p>
-                </div>
-
-                {/* ปุ่มกด (จะถูกซ่อนไว้ตอนกดปริ้นท์) */}
-                <div className="space-y-3 print:hidden">
-                  <button 
-                    onClick={() => window.print()} 
-                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors flex justify-center items-center gap-2"
-                  >
-                    🖨️ พิมพ์ใบเสร็จ
-                  </button>
-                  
-                  <button 
-                    onClick={handleCloseReceiptAndFinish} 
-                    className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors"
-                  >
-                    เสร็จสิ้น / คิวต่อไป
-                  </button>
-                </div>
-                
+      {/* Pop-up เลือกออปชัน */}
+      {optionModalOpen && selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm print:hidden" onClick={() => setOptionModalOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gray-50 p-4 border-b flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">{selectedProduct.name}</h2>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">หมวดหมู่: {MENU_CONFIG[activeCategory]?.label || "เครื่องดื่ม"}</span>
               </div>
-            )}
+              <button onClick={() => setOptionModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
 
+            <div className="p-5 overflow-y-auto flex-1 space-y-6">
+              {/* ประเภทเมนู */}
+              {MENU_CONFIG[activeCategory]?.hasType && (
+                <div>
+                  <h3 className="font-bold text-gray-700 mb-3 flex justify-between"><span>ประเภทเมนู</span><span className="text-xs text-gray-400 font-normal">เลือก 1 อย่าง</span></h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {MENU_CONFIG[activeCategory].types.map((type: any) => (
+                      <button key={type.name} onClick={() => handleTypeChange(type)} className={`py-2 px-1 rounded-lg text-sm font-medium border-2 transition-all ${selectedType?.name === type.name ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}>
+                        {type.name} <br/><span className="text-xs font-normal">฿{selectedProduct.price + type.price}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ขนาด/ไซส์ */}
+              {MENU_CONFIG[activeCategory]?.hasSize && (
+                <div>
+                  <h3 className="font-bold text-gray-700 mb-3 flex justify-between"><span>ขนาด/ไซส์</span><span className="text-xs text-gray-400 font-normal">เลือก 1 อย่าง</span></h3>
+                  <div className={`grid gap-2 ${selectedType?.name === "ร้อน" ? "grid-cols-2" : "grid-cols-3"}`}>
+                    {(selectedType?.name === "ร้อน" ? MENU_CONFIG[activeCategory].sizes.hot : MENU_CONFIG[activeCategory].sizes.normal).map((size: any) => (
+                      <button key={size.name} onClick={() => setSelectedSize(size)} className={`py-2 px-1 rounded-lg text-sm font-medium border-2 transition-all ${selectedSize?.name === size.name ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}>
+                        {size.name} <br/><span className="text-xs font-normal">{size.price > 0 ? `+฿${size.price}` : size.price < 0 ? `-฿${Math.abs(size.price)}` : 'ฟรี'}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 🌟 เลือกท็อปปิ้ง (ดึงจากฐานข้อมูล) */}
+              <div>
+                <h3 className="font-bold text-gray-700 mb-3">ท็อปปิ้งเพิ่มเติม</h3>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-4">
+                  <select 
+                    className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium text-gray-700 cursor-pointer shadow-sm"
+                    onChange={(e) => {
+                      if (!e.target.value) return;
+                      const tName = e.target.value;
+                      const tConfig = currentCategoryToppings.find((t:any) => t.name === tName);
+                      if (tConfig && !selectedToppings.find(t => t.name === tName)) setSelectedToppings([...selectedToppings, tConfig]);
+                      e.target.value = ""; 
+                    }}
+                  >
+                    <option value="">+ กดเลือกเพิ่มท็อปปิ้ง (ดึงจากระบบหลังบ้าน)</option>
+                    {/* วนลูปโชว์ท็อปปิ้งจาก DB ที่ตรงกับหมวดหมู่ */}
+                    {currentCategoryToppings.map((t:any) => (
+                      <option key={t.id} value={t.name}>{t.name} (+฿{t.price})</option>
+                    ))}
+                  </select>
+
+                  {selectedToppings.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-200 mt-3">
+                      {selectedToppings.map((t, idx) => (
+                        <span key={idx} className="bg-white border border-blue-300 text-blue-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm font-medium">
+                          {t.name} (+฿{t.price})
+                          <button onClick={() => removeTopping(t.name)} className="font-bold text-blue-400 hover:text-red-500 text-lg leading-none">&times;</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-3">
+                    <input type="text" placeholder="พิมพ์ชื่อเอง..." value={customToppingName} onChange={e => setCustomToppingName(e.target.value)} className="flex-1 p-2 border rounded-md text-xs focus:ring-1 focus:ring-blue-500 outline-none text-black" />
+                    <input type="number" placeholder="ราคา" value={customToppingPrice} onChange={e => setCustomToppingPrice(e.target.value)} className="w-16 p-2 border rounded-md text-xs focus:ring-1 focus:ring-blue-500 outline-none text-black" />
+                    <button onClick={addCustomTopping} className="bg-gray-800 text-white px-3 py-1 rounded-md text-xs font-bold hover:bg-gray-700">เพิ่ม</button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-700 mb-2">หมายเหตุ</h3>
+                <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="เช่น หวานน้อย 50%" className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-sm text-black" rows={2}></textarea>
+              </div>
+            </div>
+
+            <div className="p-4 border-t bg-white">
+              <button onClick={confirmAddToCart} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold flex justify-between items-center px-5 hover:bg-blue-700 active:scale-95 transition-all shadow-md">
+                <span className="text-lg">เพิ่มลงออเดอร์</span>
+                <span className="bg-white/20 px-3 py-1 rounded-lg text-lg">฿{selectedProduct.price + (selectedType?.price || 0) + (selectedSize?.price || 0) + selectedToppings.reduce((sum, t) => sum + t.price, 0)}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Pop-up Checkout (เหมือนเดิมทุกอย่าง) */}
+      {(isConfirming || receiptData) && (
+        <div className="fixed inset-0 bg-white/40 flex items-center justify-center z-50 backdrop-blur-md print:static print:bg-white print:block" onClick={() => {if(isConfirming){setIsConfirming(false); setAmountReceived("")} else if(receiptData) {setReceiptData(null); setAmountReceived(""); clearCart()}}}>
+          <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-100 print:max-w-full print:shadow-none print:p-0 print:m-0" onClick={(e) => e.stopPropagation()}>
+            {isConfirming && (
+              <>
+                <div className="text-center mb-6"><h2 className="text-2xl font-bold text-gray-800">สรุปยอดชำระเงิน</h2></div>
+                <div className="border-t-2 border-b-2 border-gray-100 py-4 mb-4 space-y-3 max-h-40 overflow-y-auto pr-2">
+                  {cart.map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between items-start text-gray-700 text-sm">
+                      <div className="flex-1">
+                        <span className="font-bold">{item.name} <span className="text-gray-400 font-normal">x{item.quantity}</span></span>
+                        <div className="text-[10px] text-gray-500">{item.size !== "-" && <span>[{item.size}] </span>}{item.toppings && <span>(+{item.toppings}) </span>}</div>
+                      </div>
+                      <span className="font-bold text-gray-800">฿{item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl mb-6">
+                  <div className="flex justify-between items-center mb-3"><span className="text-gray-600 font-medium">ยอดที่ต้องชำระ</span><span className="text-xl font-bold text-gray-800">฿{totalPrice}</span></div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-gray-600 font-medium">รับเงินมา (บาท)</span>
+                    <input type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} className="w-28 p-2 text-right border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-lg text-blue-600" placeholder="0" autoFocus />
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                    <span className="text-gray-600 font-medium">เงินทอน</span>
+                    <span className={`font-bold text-xl ${changeAmount >= 0 ? 'text-green-600' : 'text-red-500'}`}>฿{changeAmount > 0 ? changeAmount : 0}</span>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => { setIsConfirming(false); setAmountReceived(""); }} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-200">ยกเลิก</button>
+                  <button onClick={confirmAndSaveOrder} disabled={!isEnoughCash} className={`flex-1 py-3 rounded-xl font-bold shadow-md transition-colors ${isEnoughCash ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-70'}`}>✅ ยืนยันรับเงิน</button>
+                </div>
+              </>
+            )}
+
+            {receiptData && (
+              <div className="print:w-[80mm] print:mx-auto print:bg-white print:text-black">
+                <div className="text-center mb-6 print:mb-2">
+                  <h2 className="text-2xl font-bold text-gray-800 print:text-lg print:text-black">ใบเสร็จรับเงิน</h2>
+                  <p className="text-gray-500 text-sm mt-1 print:text-[10px] print:text-black">My POS Store Co., Ltd.</p>
+                  <div className="text-sm text-gray-500 mt-4 flex justify-between print:text-[10px] print:mt-2 print:text-black"><span>บิลเลขที่: #{receiptData.dailyNumber}</span><span>{receiptData.date}</span></div>
+                </div>
+                <div className="border-t-2 border-b-2 border-dashed border-gray-200 py-4 mb-4 space-y-3 print:py-2 print:mb-2 print:space-y-2 print:border-black">
+                  {receiptData.items.map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between text-gray-700 text-sm print:text-[12px] print:text-black">
+                      <div className="flex-1">
+                        <span className="font-bold">{item.name} <span className="text-gray-400 font-normal print:text-gray-600">x{item.quantity}</span></span>
+                        <div className="text-[10px] text-gray-500 print:text-[10px] print:text-black">{item.size !== "-" && <span>[{item.size}] </span>}{item.toppings && <span>+{item.toppings} </span>}{item.note && <span>({item.note})</span>}</div>
+                      </div>
+                      <span className="font-bold pl-2">฿{item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mb-8 print:mb-4">
+                  <div className="flex justify-between items-center text-lg font-bold text-gray-800 mb-2 print:text-sm print:mb-1 print:text-black"><span>ยอดรวมทั้งสิ้น</span><span>฿{receiptData.total}</span></div>
+                  <div className="flex justify-between items-center text-sm text-gray-600 mb-1 print:text-[12px] print:text-black"><span>รับเงินมา</span><span>฿{receiptData.received}</span></div>
+                  <div className="flex justify-between items-center text-sm text-gray-600 print:text-[12px] print:text-black"><span>เงินทอน</span><span>฿{receiptData.change}</span></div>
+                </div>
+                <div className="text-center text-sm text-gray-500 mb-6 print:text-[10px] print:text-black print:mb-0">
+                  <p>ขอบคุณที่ใช้บริการครับ/ค่ะ</p><p className="mt-1">Please come again</p>
+                </div>
+                <div className="space-y-3 print:hidden">
+                  <button onClick={() => window.print()} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 flex justify-center items-center gap-2">🖨️ พิมพ์ใบเสร็จ</button>
+                  <button onClick={() => {setReceiptData(null); setAmountReceived(""); clearCart()}} className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200">เสร็จสิ้น / คิวต่อไป</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
