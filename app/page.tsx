@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-// 🌟 กฎพื้นฐาน (Structure) ของแต่ละหมวดหมู่ (ดึงเฉพาะท็อปปิ้งจาก DB)
+// 🌟 กฎพื้นฐาน (Structure) ของแต่ละหมวดหมู่
 const MENU_CONFIG: Record<string, any> = {
   beverage: {
     label: "เครื่องดื่ม",
@@ -44,7 +44,7 @@ const MENU_CONFIG: Record<string, any> = {
 export default function Home() {
   const [cart, setCart] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
-  const [dbToppings, setDbToppings] = useState<any[]>([]); // 🌟 เก็บข้อมูลท็อปปิ้งจาก DB
+  const [dbToppings, setDbToppings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // State Checkout
@@ -52,7 +52,7 @@ export default function Home() {
   const [receiptData, setReceiptData] = useState<any | null>(null);
   const [amountReceived, setAmountReceived] = useState<string>("");
 
-  // State Modal
+  // State Modal หลัก
   const [optionModalOpen, setOptionModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [activeCategory, setActiveCategory] = useState<string>("beverage");
@@ -65,7 +65,9 @@ export default function Home() {
   const [customToppingName, setCustomToppingName] = useState("");
   const [customToppingPrice, setCustomToppingPrice] = useState("");
 
-  // 🌟 โหลดทั้งสินค้าและท็อปปิ้งตอนเปิดหน้า
+  // 🌟 State ใหม่: สำหรับ Popup เลือกท็อปปิ้งโดยเฉพาะ
+  const [toppingModalOpen, setToppingModalOpen] = useState(false);
+
   useEffect(() => {
     Promise.all([
       fetch("http://localhost:3001/products").then(res => res.json()),
@@ -79,8 +81,6 @@ export default function Home() {
 
   const openOptionModal = (product: any) => {
     setSelectedProduct(product);
-    
-    // 🌟 ดึงหมวดหมู่จากฐานข้อมูลตรงๆ ไม่ต้องเดาจากชื่อแล้ว!
     const category = product.category || "beverage";
     setActiveCategory(category);
     const config = MENU_CONFIG[category];
@@ -114,8 +114,13 @@ export default function Home() {
     }
   };
 
-  const removeTopping = (toppingName: string) => {
-    setSelectedToppings(selectedToppings.filter(t => t.name !== toppingName));
+  const toggleTopping = (topping: {name: string, price: number}) => {
+    const isExist = selectedToppings.find(t => t.name === topping.name);
+    if (isExist) {
+      setSelectedToppings(selectedToppings.filter(t => t.name !== topping.name));
+    } else {
+      setSelectedToppings([...selectedToppings, topping]);
+    }
   };
 
   const addCustomTopping = () => {
@@ -202,8 +207,23 @@ export default function Home() {
     }
   };
 
-  // 🌟 ฟิลเตอร์ท็อปปิ้งให้ตรงกับหมวดหมู่ที่กดเข้ามา
   const currentCategoryToppings = dbToppings.filter(t => t.category === activeCategory);
+
+  // การคลิกพื้นที่ว่างด้านนอกเพื่อปิด Modal
+  const handleBackdropClick = () => {
+    if (isConfirming) {
+      setIsConfirming(false);
+      setAmountReceived("");
+    } else if (receiptData) {
+      setReceiptData(null);
+      setAmountReceived("");
+      clearCart();
+    } else if (toppingModalOpen) {
+      setToppingModalOpen(false); // ถ้าเปิดหน้าต่างท็อปปิ้งอยู่ ให้ปิดแค่หน้าต่างท็อปปิ้ง
+    } else if (optionModalOpen) {
+      setOptionModalOpen(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gray-100 p-8 print:bg-white print:p-0">
@@ -237,7 +257,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* โซนตะกร้าและชำระเงิน (คงเดิม) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm min-h-[400px] flex flex-col">
             <div className="flex justify-between items-center mb-4 border-b pb-2">
               <h2 className="text-xl font-bold text-gray-800">ออเดอร์ปัจจุบัน</h2>
@@ -272,9 +291,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Pop-up เลือกออปชัน */}
+      {/* ========================================== */}
+      {/* 🌟 1. Modal หลัก: เลือกประเภท/ไซส์/หมายเหตุ */}
+      {/* ========================================== */}
       {optionModalOpen && selectedProduct && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm print:hidden" onClick={() => setOptionModalOpen(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40 backdrop-blur-sm print:hidden" onClick={handleBackdropClick}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <div className="bg-gray-50 p-4 border-b flex justify-between items-center">
               <div>
@@ -285,7 +306,7 @@ export default function Home() {
             </div>
 
             <div className="p-5 overflow-y-auto flex-1 space-y-6">
-              {/* ประเภทเมนู */}
+              {/* เลือกประเภท (ร้อน/เย็น/ปั่น) */}
               {MENU_CONFIG[activeCategory]?.hasType && (
                 <div>
                   <h3 className="font-bold text-gray-700 mb-3 flex justify-between"><span>ประเภทเมนู</span><span className="text-xs text-gray-400 font-normal">เลือก 1 อย่าง</span></h3>
@@ -299,7 +320,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ขนาด/ไซส์ */}
+              {/* เลือกขนาดแก้ว/ชิ้น */}
               {MENU_CONFIG[activeCategory]?.hasSize && (
                 <div>
                   <h3 className="font-bold text-gray-700 mb-3 flex justify-between"><span>ขนาด/ไซส์</span><span className="text-xs text-gray-400 font-normal">เลือก 1 อย่าง</span></h3>
@@ -313,49 +334,45 @@ export default function Home() {
                 </div>
               )}
 
-              {/* 🌟 เลือกท็อปปิ้ง (ดึงจากฐานข้อมูล) */}
+              {/* 🌟 ปรับโซนท็อปปิ้งให้เป็นแค่ "ปุ่มเรียก Popup" และ "แสดงรายการที่เลือก" */}
               <div>
-                <h3 className="font-bold text-gray-700 mb-3">ท็อปปิ้งเพิ่มเติม</h3>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-4">
-                  <select 
-                    className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium text-gray-700 cursor-pointer shadow-sm"
-                    onChange={(e) => {
-                      if (!e.target.value) return;
-                      const tName = e.target.value;
-                      const tConfig = currentCategoryToppings.find((t:any) => t.name === tName);
-                      if (tConfig && !selectedToppings.find(t => t.name === tName)) setSelectedToppings([...selectedToppings, tConfig]);
-                      e.target.value = ""; 
-                    }}
+                <h3 className="font-bold text-gray-700 mb-3 flex justify-between">
+                  <span>ท็อปปิ้งเพิ่มเติม</span>
+                  <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md">เลือกแล้ว {selectedToppings.length} อย่าง</span>
+                </h3>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  {/* ปุ่มกดเปิด Popup ท็อปปิ้ง */}
+                  <button 
+                    onClick={() => setToppingModalOpen(true)}
+                    className="w-full py-3 bg-white border-2 border-dashed border-blue-400 text-blue-600 font-bold rounded-xl hover:bg-blue-50 hover:border-blue-500 transition-colors flex items-center justify-center gap-2 shadow-sm"
                   >
-                    <option value="">+ กดเลือกเพิ่มท็อปปิ้ง (ดึงจากระบบหลังบ้าน)</option>
-                    {/* วนลูปโชว์ท็อปปิ้งจาก DB ที่ตรงกับหมวดหมู่ */}
-                    {currentCategoryToppings.map((t:any) => (
-                      <option key={t.id} value={t.name}>{t.name} (+฿{t.price})</option>
-                    ))}
-                  </select>
+                    <span className="text-xl leading-none">+</span>
+                    <span>กดเพื่อเพิ่ม / จัดการท็อปปิ้ง</span>
+                  </button>
 
+                  {/* แสดงป้ายท็อปปิ้งที่เลือกไว้แล้ว */}
                   {selectedToppings.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-200 mt-3">
+                    <div className="flex flex-wrap gap-2 pt-4 mt-2 border-t border-gray-200">
                       {selectedToppings.map((t, idx) => (
-                        <span key={idx} className="bg-white border border-blue-300 text-blue-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm font-medium">
+                        <span key={idx} className="bg-white border border-blue-300 text-blue-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm font-medium">
                           {t.name} (+฿{t.price})
-                          <button onClick={() => removeTopping(t.name)} className="font-bold text-blue-400 hover:text-red-500 text-lg leading-none">&times;</button>
+                          <button onClick={() => toggleTopping(t)} className="font-bold text-red-500 hover:text-red-700 text-sm leading-none ml-1">&times;</button>
                         </span>
                       ))}
                     </div>
                   )}
-
-                  <div className="flex gap-2 pt-3">
-                    <input type="text" placeholder="พิมพ์ชื่อเอง..." value={customToppingName} onChange={e => setCustomToppingName(e.target.value)} className="flex-1 p-2 border rounded-md text-xs focus:ring-1 focus:ring-blue-500 outline-none text-black" />
-                    <input type="number" placeholder="ราคา" value={customToppingPrice} onChange={e => setCustomToppingPrice(e.target.value)} className="w-16 p-2 border rounded-md text-xs focus:ring-1 focus:ring-blue-500 outline-none text-black" />
-                    <button onClick={addCustomTopping} className="bg-gray-800 text-white px-3 py-1 rounded-md text-xs font-bold hover:bg-gray-700">เพิ่ม</button>
-                  </div>
                 </div>
               </div>
 
+              {/* หมายเหตุ */}
               <div>
                 <h3 className="font-bold text-gray-700 mb-2">หมายเหตุ</h3>
-                <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="เช่น หวานน้อย 50%" className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-sm text-black" rows={2}></textarea>
+                <textarea 
+                  value={note} onChange={(e) => setNote(e.target.value)} 
+                  placeholder="เช่น หวานน้อย 50%, ไม่รับหลอด" 
+                  className="w-full border border-gray-300 rounded-lg p-3 text-sm font-medium text-gray-900 bg-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-sm" 
+                  rows={2}
+                ></textarea>
               </div>
             </div>
 
@@ -369,9 +386,95 @@ export default function Home() {
         </div>
       )}
 
-      {/* Pop-up Checkout (เหมือนเดิมทุกอย่าง) */}
+      {/* ========================================== */}
+      {/* 🌟 2. Modal ท็อปปิ้ง (เด้งซ้อนขึ้นมาเมื่อกดปุ่ม) */}
+      {/* ========================================== */}
+      {toppingModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm print:hidden" onClick={handleBackdropClick}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[80vh] sm:h-auto sm:max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+            
+            <div className="bg-blue-600 p-4 flex justify-between items-center text-white">
+              <div>
+                <h2 className="text-lg font-bold">✨ เลือกท็อปปิ้ง</h2>
+                <p className="text-xs text-blue-100 font-medium">เลือกได้หลายอย่างตามต้องการ</p>
+              </div>
+              <button onClick={() => setToppingModalOpen(false)} className="text-white/80 hover:text-white text-3xl font-bold leading-none">&times;</button>
+            </div>
+
+            <div className="p-5 overflow-y-auto flex-1 bg-gray-50 space-y-6">
+              
+              {/* 🌟 Grid ท็อปปิ้งแบบเต็มจอ (เลื่อนแนวตั้ง) */}
+              {currentCategoryToppings.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                  {currentCategoryToppings.map((t: any) => {
+                    const isSelected = selectedToppings.some(selected => selected.name === t.name);
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => toggleTopping(t)}
+                        className={`relative p-3 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all active:scale-95 ${
+                          isSelected 
+                            ? 'border-blue-500 bg-blue-50 shadow-md' 
+                            : 'border-transparent bg-white shadow-sm hover:border-blue-300 hover:shadow-md'
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm z-10">✓</div>
+                        )}
+                        
+                        {t.image ? (
+                          <img src={t.image} className="w-14 h-14 object-cover rounded-full shadow-sm border border-gray-100 bg-white" alt={t.name} />
+                        ) : (
+                          <div className="w-14 h-14 bg-purple-100 text-purple-400 rounded-full flex items-center justify-center text-2xl font-bold shadow-sm">✨</div>
+                        )}
+                        
+                        <div className="text-center leading-tight mt-1 w-full">
+                          <p className="text-xs font-bold text-gray-800 line-clamp-2 min-h-[2rem] flex items-center justify-center">{t.name}</p>
+                          <p className="text-xs text-blue-600 font-bold mt-1">+{t.price}฿</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-gray-400 font-medium">
+                  ไม่มีรายการท็อปปิ้งในระบบ
+                </div>
+              )}
+
+              {/* 🌟 กล่องสำหรับเพิ่มท็อปปิ้งเอง */}
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <p className="text-sm font-bold text-gray-700 mb-2">ไม่เจอท็อปปิ้งที่ต้องการ? (พิมพ์เพิ่มเอง)</p>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" placeholder="ชื่อท็อปปิ้ง..." 
+                    value={customToppingName} onChange={e => setCustomToppingName(e.target.value)} 
+                    className="flex-1 p-2 border rounded-lg text-sm font-medium text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none" 
+                  />
+                  <input 
+                    type="number" placeholder="ราคา" 
+                    value={customToppingPrice} onChange={e => setCustomToppingPrice(e.target.value)} 
+                    className="w-20 p-2 border rounded-lg text-sm font-medium text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none text-center" 
+                  />
+                  <button onClick={addCustomTopping} className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-900 transition-colors">เพิ่ม</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t bg-white">
+              <button onClick={() => setToppingModalOpen(false)} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-blue-700 active:scale-95 transition-all shadow-md text-lg">
+                ยืนยันการเลือก ({selectedToppings.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* 3. Pop-up Checkout (เหมือนเดิม) */}
+      {/* ========================================== */}
       {(isConfirming || receiptData) && (
-        <div className="fixed inset-0 bg-white/40 flex items-center justify-center z-50 backdrop-blur-md print:static print:bg-white print:block" onClick={() => {if(isConfirming){setIsConfirming(false); setAmountReceived("")} else if(receiptData) {setReceiptData(null); setAmountReceived(""); clearCart()}}}>
+        <div className="fixed inset-0 bg-white/40 flex items-center justify-center z-[60] backdrop-blur-md print:static print:bg-white print:block" onClick={() => {if(isConfirming){setIsConfirming(false); setAmountReceived("")} else if(receiptData) {setReceiptData(null); setAmountReceived(""); clearCart()}}}>
           <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-100 print:max-w-full print:shadow-none print:p-0 print:m-0" onClick={(e) => e.stopPropagation()}>
             {isConfirming && (
               <>
@@ -391,7 +494,11 @@ export default function Home() {
                   <div className="flex justify-between items-center mb-3"><span className="text-gray-600 font-medium">ยอดที่ต้องชำระ</span><span className="text-xl font-bold text-gray-800">฿{totalPrice}</span></div>
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-gray-600 font-medium">รับเงินมา (บาท)</span>
-                    <input type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} className="w-28 p-2 text-right border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-lg text-blue-600" placeholder="0" autoFocus />
+                    <input 
+                      type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} 
+                      className="w-28 p-2 text-right border border-gray-300 rounded-lg bg-white text-blue-700 font-bold text-lg placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                      placeholder="0" autoFocus 
+                    />
                   </div>
                   <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                     <span className="text-gray-600 font-medium">เงินทอน</span>
