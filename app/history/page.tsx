@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import * as XLSX from 'xlsx';
 
 export default function HistoryPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -95,6 +96,63 @@ export default function HistoryPage() {
   const mostSoldProduct = Object.values(productStats)
     .sort((a, b) => b.quantity - a.quantity)[0];
 
+  // ==========================================
+  // 🌟 ฟังก์ชัน Export ข้อมูลเป็น Excel (แบบ 2 ชีท)
+  // ==========================================
+  const exportToExcel = () => {
+    if (filteredOrders.length === 0) {
+      alert("ไม่มีข้อมูลให้ Export ในช่วงเวลานี้ครับ");
+      return;
+    }
+
+    // 1. เตรียมกล่องเก็บข้อมูล 2 ชุด (สำหรับ 2 ชีท)
+    const orderSummaryData: any[] = []; // ข้อมูลสรุปรายบิล
+    const itemDetailsData: any[] = [];  // ข้อมูลรายละเอียดสินค้ารายชิ้น
+    
+    filteredOrders.forEach((order) => {
+      // คำนวณยอดรวมของบิลนี้
+      const orderTotal = order.items.reduce((sum: number, item: any) => {
+        const price = item.product?.price || 0;
+        return sum + (price * (item.quantity || 1));
+      }, 0);
+
+      // 👉 ชุดที่ 1: เก็บข้อมูลสรุปรายบิล (Order)
+      orderSummaryData.push({
+        "เลขที่บิล": order.dailyNumber || order.id || "-",
+        "วันที่เวลา": formatDate(order.createdAt),
+        "จำนวนรายการสินค้า": order.items.length,
+        "ยอดรวมทั้งสิ้น (บาท)": orderTotal
+      });
+
+      // 👉 ชุดที่ 2: เก็บข้อมูลรายละเอียดสินค้าในบิลนั้น (Order Item)
+      order.items.forEach((item: any) => {
+        itemDetailsData.push({
+          "เลขที่บิล": order.dailyNumber || order.id || "-",
+          "วันที่": formatDate(order.createdAt),
+          "รายการสินค้า": item.product?.name || "สินค้าไม่ทราบชื่อ",
+          "ราคาต่อหน่วย (บาท)": item.product?.price || 0,
+          "จำนวน (ชิ้น)": item.quantity || 1,
+          "ยอดรวม (บาท)": (item.product?.price || 0) * (item.quantity || 1)
+        });
+      });
+    });
+
+    // 2. แปลงข้อมูลทั้ง 2 ชุดให้เป็นแผ่นงาน (Worksheet)
+    const summarySheet = XLSX.utils.json_to_sheet(orderSummaryData);
+    const detailsSheet = XLSX.utils.json_to_sheet(itemDetailsData);
+
+    // 3. สร้างสมุดงาน (Workbook) 
+    const workbook = XLSX.utils.book_new();
+    
+    // 4. นำแผ่นงานทั้ง 2 อัน ใส่เข้าไปในสมุดงาน (ตั้งชื่อชีทได้ตามใจชอบเลยครับ)
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "สรุปยอดรายบิล");
+    XLSX.utils.book_append_sheet(workbook, detailsSheet, "รายละเอียดสินค้า");
+
+    // 5. สั่งดาวน์โหลดไฟล์
+    const fileName = `sales_history_${timeFilter === 'all' ? 'all' : timeFilter + '_days'}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -106,7 +164,7 @@ export default function HistoryPage() {
             <p className="text-gray-500 mt-1">ข้อมูลเชิงลึกและประวัติการขายทั้งหมด</p>
           </div>
           
-          {/* 🌟 กลุ่มปุ่มเมนูด้านขวา (เพิ่ม Dropdown เลือกเวลา) */}
+          {/* 🌟 กลุ่มปุ่มเมนูด้านขวา (เพิ่มปุ่ม Export) */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-200 flex items-center gap-2">
               <span className="text-sm text-gray-500 font-medium">📅 ดูข้อมูล:</span>
@@ -122,6 +180,14 @@ export default function HistoryPage() {
                 <option value="all">ทั้งหมด</option>
               </select>
             </div>
+
+            {/* 🌟 ปุ่ม Export Excel สีเขียว */}
+            <button 
+              onClick={exportToExcel}
+              className="bg-green-600 text-white px-4 py-2.5 rounded-xl font-bold shadow-sm hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              📥 Export Excel
+            </button>
 
             <Link href="/" className="bg-gray-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-900 transition-colors shadow-sm">
               ← แคชเชียร์
@@ -190,7 +256,7 @@ export default function HistoryPage() {
                           itemStyle={{ color: '#3B82F6' }}
                           formatter={(value: any) => [`฿${Number(value).toLocaleString()}`, 'รายได้']}
                         />
-                        <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} name="รายได้ (บาท)" barSize={40}/>
+                        <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} name="รายได้ (บาท)" barSize={40}activeBar={{ fill: '#1E3A8A' }} /* 🌟 เติมบรรทัดนี้: เปลี่ยนเป็นสีน้ำเงินเข้มเวลาเมาส์ชี้ *//>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
