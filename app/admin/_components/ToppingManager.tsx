@@ -43,11 +43,11 @@ export default function ToppingManager({ toppings, categories, fetchData }: { to
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col max-h-[85vh]">
       <h2 className="text-xl font-bold mb-4 text-purple-600 shrink-0">✨ จัดการท็อปปิ้ง</h2>
       <form onSubmit={handleSaveTopping} className="mb-4 grid grid-cols-2 gap-3 bg-gray-50 p-4 rounded-xl shrink-0 border border-gray-200">
-        <input type="text" placeholder="ชื่อท็อปปิ้ง" value={toppingName} onChange={e => setToppingName(e.target.value)} required className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 font-medium bg-white" />
-        <input type="number" placeholder="ราคา (+บาท)" value={toppingPrice} onChange={e => setToppingPrice(e.target.value)} required className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 font-medium bg-white" />
-        <input type="text" placeholder="URL รูปภาพ (เสริม)" value={toppingImage} onChange={e => setToppingImage(e.target.value)} className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 col-span-2 font-medium bg-white" />
+        <input type="text" placeholder="ชื่อท็อปปิ้ง" value={toppingName} onChange={e => setToppingName(e.target.value)} required className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 font-medium bg-white text-gray-900" />
+        <input type="number" placeholder="ราคา (+บาท)" value={toppingPrice} onChange={e => setToppingPrice(e.target.value)} required className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 font-medium bg-white text-gray-900" />
+        <input type="text" placeholder="URL รูปภาพ (เสริม)" value={toppingImage} onChange={e => setToppingImage(e.target.value)} className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 col-span-2 font-medium bg-white text-gray-900" />
         
-        <select value={toppingCategory} onChange={e => setToppingCategory(e.target.value)} className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 col-span-2 font-bold bg-white cursor-pointer">
+        <select value={toppingCategory} onChange={e => setToppingCategory(e.target.value)} className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 col-span-2 font-bold bg-white cursor-pointer text-gray-900">
           {categories.map(c => <option key={c.id} value={c.value}>🗂️ ใช้สำหรับ: {c.label}</option>)}
           {categories.length === 0 && <option value="">(สร้างหมวดหมู่ก่อน)</option>}
         </select>

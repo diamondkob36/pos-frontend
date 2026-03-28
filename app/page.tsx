@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import CashierHeader from "./_components/CashierHeader";
 import ProductCard from "./_components/ProductCard";
@@ -9,12 +8,21 @@ import CheckoutModal from "./_components/CheckoutModal";
 import ProductOptionModal from "./_components/ProductOptionModal";
 import ToppingModal from "./_components/ToppingModal";
 
+import { useAuth } from "./hooks/useAuth";
+import { useCart } from "./hooks/useCart";
+
 const DEFAULT_TYPES = [ { name: "ร้อน", price: -5 }, { name: "เย็น", price: 0 }, { name: "ปั่น", price: 10 } ];
 const NORMAL_SIZES = [ { name: "S", price: -5 }, { name: "M", price: 0 }, { name: "L", price: 5 } ];
 const HOT_SIZES = [ { name: "ร้อน 8oz", price: 0 }, { name: "ร้อน 12oz", price: 10 } ];
 
 export default function Home() {
-  const [cart, setCart] = useState<any[]>([]);
+
+  // 🔌 1. เสียบปลั๊กระบบล็อกอิน
+  const { currentUser, handleLogout } = useAuth();
+  
+  // 🔌 2. เสียบปลั๊กระบบตะกร้า
+  const { cart, addToCart, removeFromCart, clearCart, totalPrice } = useCart();
+  
   const [products, setProducts] = useState<any[]>([]);
   const [dbToppings, setDbToppings] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]); 
@@ -40,21 +48,7 @@ export default function Home() {
   const [productFilter, setProductFilter] = useState("all"); 
   const [adjustToppingName, setAdjustToppingName] = useState<string | null>(null);
 
-  const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  useEffect(() => {
-    const userStr = localStorage.getItem("pos_user");
-    if (!userStr) { router.push("/login"); return; }
-    setCurrentUser(JSON.parse(userStr));
-  }, [router]);
-
-  const handleLogout = () => {
-    if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
-      localStorage.removeItem("pos_user");
-      router.push("/login");
-    }
-  };
+  // 🌟 ลบ useRouter และ useEffect เช็คสิทธิ์ของเก่าทิ้งไปแล้ว เพราะ useAuth จัดการให้หมดแล้วครับ
 
   useEffect(() => {
     Promise.all([
@@ -106,25 +100,20 @@ export default function Home() {
   };
 
   const confirmAddToCart = () => {
-    const finalPrice = selectedProduct.price + (selectedType?.price || 0) + (selectedSize?.price || 0) + selectedToppings.reduce((sum, t) => sum + (t.price * t.qty), 0);
-    const toppingsString = selectedToppings.map(t => `${t.name} @${t.price} x${t.qty}`).join(", ");
+    const finalPrice = selectedProduct.price + (selectedType?.price || 0) + (selectedSize?.price || 0) + selectedToppings.reduce((sum:any, t:any) => sum + (t.price * t.qty), 0);
+    const toppingsString = selectedToppings.map((t:any) => `${t.name} @${t.price} x${t.qty}`).join(", ");
     const combinedSizeText = `${selectedType ? selectedType.name + " " : ""}${selectedSize ? "(" + selectedSize.name + ")" : ""}`.trim();
     const cartKey = `${selectedProduct.id}-${combinedSizeText}-${toppingsString}-${note}`;
 
-    setCart(prev => {
-      const existing = prev.find(i => i.cartKey === cartKey);
-      if (existing) return prev.map(i => i.cartKey === cartKey ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { cartKey, id: selectedProduct.id, name: selectedProduct.name, basePrice: selectedProduct.price, price: finalPrice, size: combinedSizeText || "-", toppings: toppingsString, note, quantity: 1 }];
+    // 🔌 เรียกใช้สมองกลตะกร้า แทนการเขียน setCart เองยาวๆ
+    addToCart({
+      cartKey, id: selectedProduct.id, name: selectedProduct.name, basePrice: selectedProduct.price, 
+      price: finalPrice, size: combinedSizeText || "-", toppings: toppingsString, note, quantity: 1
     });
+    
     setOptionModalOpen(false); 
   };
 
-  const removeFromCart = (cartKey: string) => {
-    setCart(prev => prev.find(i => i.cartKey === cartKey)?.quantity === 1 ? prev.filter(i => i.cartKey !== cartKey) : prev.map(i => i.cartKey === cartKey ? { ...i, quantity: i.quantity - 1 } : i));
-  };
-
-  const clearCart = () => setCart([]);
-  const totalPrice = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   const numericAmount = parseFloat(amountReceived) || 0;
   const changeAmount = numericAmount - totalPrice;
   const isEnoughCash = numericAmount >= totalPrice;
