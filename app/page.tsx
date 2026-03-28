@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
@@ -49,6 +50,18 @@ export default function Home() {
 
   // 🌟 State ใหม่: สำหรับเปิด Popup ปรับจำนวนท็อปปิ้ง (เก็บชื่อท็อปปิ้งที่กำลังปรับ)
   const [adjustToppingName, setAdjustToppingName] = useState<string | null>(null);
+
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<any>(null); // 🌟 เก็บข้อมูลคนล็อกอิน
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("pos_user");
+    if (!userStr) {
+      router.push("/login");
+      return;
+    }
+    setCurrentUser(JSON.parse(userStr));
+  }, [router]);
 
   useEffect(() => {
     Promise.all([

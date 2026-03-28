@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Sidebar from "../components/Sidebar";
@@ -47,6 +48,22 @@ export default function AdminPage() {
       setIsLoading(false);
     });
   };
+
+  const router = useRouter();
+
+  // 🌟 โค้ดสำหรับเช็คสิทธิ์ (เอาไว้บนสุดเลย)
+  useEffect(() => {
+    const userStr = localStorage.getItem("pos_user");
+    if (!userStr) {
+      router.push("/login"); // ถ้ายังไม่ล็อกอิน เตะไปหน้าล็อกอิน
+      return;
+    }
+    const user = JSON.parse(userStr);
+    if (user.role !== "manager") {
+      alert("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ครับ (เฉพาะผู้จัดการเท่านั้น) ❌");
+      router.push("/"); // ถ้าเป็นแค่แคชเชียร์ เตะกลับไปหน้าแรก
+    }
+  }, [router]);
 
   useEffect(() => {
     fetchData();
