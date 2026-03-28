@@ -3,6 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import CashierHeader from "./components/CashierHeader";
+import ProductCard from "./components/ProductCard";
+import CartPanel from "./components/CartPanel";
 
 const DEFAULT_TYPES = [
   { name: "ร้อน", price: -5 },
@@ -247,47 +250,16 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-100 p-8 print:bg-white print:p-0">
+      
+      {/* 🌟 ส่วนที่ 1: หน้าจอหลักที่ถูกแยกเป็นคอมโพเนนต์เรียบร้อยแล้ว */}
       <div className="print:hidden">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">ระบบ POS - หน้าจอแคชเชียร์</h1>
-          
-          {/* 🌟 โซนปุ่มเมนูด้านขวาบน */}
-          <div className="flex flex-wrap items-center gap-3">
-            
-            {/* 1. แสดงชื่อและตำแหน่งของคนล็อกอิน */}
-            {currentUser && (
-              <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
-                <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
-                  {currentUser.name?.charAt(0) || "U"}
-                </div>
-                <div className="text-sm">
-                  <p className="font-bold text-gray-800 leading-none mb-1">{currentUser.name}</p>
-                  <p className="text-[10px] text-gray-500 uppercase font-bold">
-                    {currentUser.role === 'manager' ? '👑 ผู้จัดการ' : '🧑‍🍳 แคชเชียร์'}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* 2. ปุ่มออกจากระบบ (เห็นทุกคน) */}
-            <button 
-              onClick={handleLogout} 
-              className="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl font-bold shadow-sm border border-red-100 hover:bg-red-100 transition-colors flex items-center gap-2"
-            >
-              🚪 ออกจากระบบ
-            </button>
-
-            {/* 3. ปุ่มไปหลังบ้าน (ซ่อนไว้ให้เห็นเฉพาะผู้จัดการ) */}
-            {currentUser?.role === 'manager' && (
-              <Link href="/history" className="bg-white text-blue-600 px-5 py-2.5 rounded-xl font-bold shadow-sm border border-blue-200 hover:bg-blue-50 transition-colors flex items-center gap-2">
-                📊 หลังร้าน
-              </Link>
-            )}
-            
-          </div>
-        </div>
+        
+        {/* แถบด้านบน */}
+        <CashierHeader currentUser={currentUser} handleLogout={handleLogout} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* โซนสินค้าตรงกลาง */}
           <div className="lg:col-span-2 flex flex-col h-[calc(100vh-140px)]">
             <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar shrink-0">
               <button onClick={() => setProductFilter("all")} className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm border ${productFilter === "all" ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>ทั้งหมด</button>
@@ -300,59 +272,24 @@ export default function Home() {
               {isLoading ? (
                 <div className="col-span-full flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
               ) : filteredProducts.length === 0 ? (
-                <div className="col-span-full text-center py-12 text-gray-400 font-medium bg-white rounded-2xl border border-gray-100 border-dashed">ไม่มีสินค้าในหมวดหมู่นี้</div>
+                <div className="col-span-full text-center py-12 text-gray-600 font-medium bg-white rounded-2xl border border-gray-100 border-dashed">ไม่มีสินค้าในหมวดหมู่นี้</div>
               ) : (
                 filteredProducts.map((product) => (
-                  <div key={product.id} onClick={() => openOptionModal(product)} className="bg-white p-4 rounded-xl shadow-sm cursor-pointer transition-all active:scale-95 hover:ring-4 hover:ring-blue-500 border border-transparent flex flex-col">
-                    <img src={product.image} alt={product.name} className="w-full h-32 object-cover rounded-lg mb-4 bg-gray-100" />
-                    <h3 className="text-md font-bold text-gray-800 line-clamp-2 leading-tight flex-1">{product.name}</h3>
-                    <div className="flex justify-between items-end mt-2 pt-2 border-t border-gray-50">
-                      <p className="text-blue-600 font-extrabold text-lg">฿{product.price}</p>
-                    </div>
-                  </div>
+                  <ProductCard key={product.id} product={product} onClick={() => openOptionModal(product)} />
                 ))
               )}
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm h-[calc(100vh-140px)] flex flex-col border border-gray-100">
-            <div className="flex justify-between items-center mb-4 border-b pb-3">
-              <h2 className="text-xl font-bold text-gray-800">🛒 ออเดอร์ปัจจุบัน</h2>
-              {cart.length > 0 && <button onClick={clearCart} className="text-sm text-red-500 hover:text-red-700 font-medium bg-red-50 px-3 py-1 rounded-lg">ล้างทั้งหมด</button>}
-            </div>
-            
-            <div className="space-y-4 mb-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {cart.length === 0 ? <p className="text-gray-400 text-center py-10 font-medium">ยังไม่มีสินค้าในตะกร้า</p> : cart.map((item) => (
-                <div key={item.cartKey} className="flex justify-between items-start border-b pb-4 border-gray-100 last:border-0 last:pb-0">
-                  <div className="flex-1 pr-3">
-                    <p className="font-bold text-gray-800">{item.name}</p>
-                    <div className="text-[11px] text-gray-500 mt-1 space-y-0.5">
-                      {item.size !== "-" && <p className="text-blue-600 font-medium">• {item.size}</p>}
-                      {item.toppings && <p>• ท็อปปิ้ง: {item.toppings}</p>}
-                      {item.note && <p className="text-orange-500 font-medium">หมายเหตุ: {item.note}</p>}
-                    </div>
-                    <p className="text-sm font-bold text-gray-600 mt-1">฿{item.price} x {item.quantity}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <p className="font-extrabold text-gray-900 text-lg">฿{item.price * item.quantity}</p>
-                    <button onClick={() => removeFromCart(item.cartKey)} className="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">ลบ</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {cart.length > 0 && (
-              <div className="mt-auto pt-4 border-t-2 border-dashed border-gray-200 shrink-0">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-lg font-bold text-gray-600">ยอดรวมสุทธิ</span>
-                  <span className="text-4xl font-black text-blue-600 tracking-tight">฿{totalPrice.toLocaleString()}</span>
-                </div>
-                <button onClick={handleCheckoutClick} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-xl shadow-md hover:bg-blue-700 active:scale-95 transition-all">
-                  ชำระเงิน
-                </button>
-              </div>
-            )}
-          </div>
+          {/* แถบตะกร้าด้านขวา */}
+          <CartPanel 
+            cart={cart} 
+            clearCart={clearCart} 
+            removeFromCart={removeFromCart} 
+            totalPrice={totalPrice} 
+            handleCheckoutClick={handleCheckoutClick} 
+          />
+          
         </div>
       </div>
 

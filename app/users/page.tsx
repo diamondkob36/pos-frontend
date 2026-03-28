@@ -62,11 +62,11 @@ export default function UsersPage() {
           <h1 className="text-3xl font-bold text-gray-800 mb-8">👥 จัดการบัญชีพนักงาน</h1>
           
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-            <h2 className="text-xl font-bold mb-4">{editingId ? "✏️ แก้ไขข้อมูลพนักงาน" : "+ เพิ่มพนักงานใหม่"}</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-700">{editingId ? "✏️ แก้ไขข้อมูลพนักงาน" : "+ เพิ่มพนักงานใหม่"}</h2>
             <form onSubmit={handleSaveUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" placeholder="ชื่อ - นามสกุล" value={name} onChange={e => setName(e.target.value)} required className="p-3 border rounded-xl outline-none focus:border-blue-500" />
-              <input type="text" placeholder="รหัสผู้ใช้งาน (Username)" value={username} onChange={e => setUsername(e.target.value)} required className="p-3 border rounded-xl outline-none focus:border-blue-500" />
-              <input type="password" placeholder={editingId ? "รหัสผ่านใหม่ (เว้นว่างไว้ถ้าไม่เปลี่ยน)" : "รหัสผ่าน"} value={password} onChange={e => setPassword(e.target.value)} required={!editingId} className="p-3 border rounded-xl outline-none focus:border-blue-500" />
+              <input type="text" placeholder="ชื่อ - นามสกุล" value={name} onChange={e => setName(e.target.value)} required className="p-3 border rounded-xl outline-none focus:border-blue-500 text-gray-700" />
+              <input type="text" placeholder="รหัสผู้ใช้งาน (Username)" value={username} onChange={e => setUsername(e.target.value)} required className="p-3 border rounded-xl outline-none focus:border-blue-500 text-gray-700"/>
+              <input type="password" placeholder={editingId ? "รหัสผ่านใหม่ (เว้นว่างไว้ถ้าไม่เปลี่ยน)" : "รหัสผ่าน"} value={password} onChange={e => setPassword(e.target.value)} required={!editingId} className="p-3 border rounded-xl outline-none focus:border-blue-500 text-gray-700" />
               <select value={role} onChange={e => setRole(e.target.value)} className="p-3 border rounded-xl outline-none focus:border-blue-500 font-bold text-gray-700">
                 <option value="cashier">🧑‍🍳 พนักงานหน้าร้าน (Cashier)</option>
                 <option value="manager">👑 ผู้จัดการร้าน (Manager)</option>
@@ -78,7 +78,7 @@ export default function UsersPage() {
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold mb-4">📋 รายชื่อพนักงานทั้งหมด</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-700">📋 รายชื่อพนักงานทั้งหมด</h2>
             <div className="space-y-3">
               {users.map(u => (
                 <div key={u.id} className="flex justify-between items-center p-4 border border-gray-100 rounded-xl hover:bg-gray-50">
