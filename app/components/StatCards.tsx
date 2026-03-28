@@ -1,0 +1,49 @@
+"use client";
+
+export default function StatCards({ totalRevenue, totalOrders, mostSoldProduct, mostSoldTopping }: any) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 border-l-4 border-l-blue-500">
+        <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-2xl shrink-0">💰</div>
+        <div className="overflow-hidden">
+          <p className="text-sm font-medium text-gray-500">รายรับรวม</p>
+          <p className="text-2xl font-bold text-gray-800 truncate">฿{totalRevenue.toLocaleString()}</p>
+        </div>
+      </div>
+      
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 border-l-4 border-l-purple-500">
+        <div className="w-14 h-14 bg-purple-50 rounded-full flex items-center justify-center text-2xl shrink-0">🧾</div>
+        <div className="overflow-hidden">
+          <p className="text-sm font-medium text-gray-500">จำนวนบิล</p>
+          <p className="text-2xl font-bold text-gray-800 truncate">{totalOrders} <span className="text-sm font-normal text-gray-500">รายการ</span></p>
+        </div>
+      </div>
+      
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 border-l-4 border-l-orange-500">
+        <div className="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center text-2xl shrink-0">🏆</div>
+        <div className="overflow-hidden">
+          <p className="text-sm font-medium text-gray-500">เมนูขายดีสุด</p>
+          <p className="text-xl font-bold text-gray-800 truncate" title={mostSoldProduct?.name}>
+            {mostSoldProduct ? mostSoldProduct.name : "-"}
+          </p>
+          {mostSoldProduct && (
+            <p className="text-xs text-green-600 font-bold mt-1 truncate">ขายได้ {mostSoldProduct.quantity} รายการ</p>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 border-l-4 border-l-pink-500">
+        <div className="w-14 h-14 bg-pink-50 rounded-full flex items-center justify-center text-2xl shrink-0">✨</div>
+        <div className="overflow-hidden">
+          <p className="text-sm font-medium text-gray-500">ท็อปปิ้งยอดฮิต</p>
+          <p className="text-xl font-bold text-gray-800 truncate" title={mostSoldTopping?.name}>
+            {mostSoldTopping ? mostSoldTopping.name : "-"}
+          </p>
+          {mostSoldTopping && (
+            <p className="text-xs text-pink-600 font-bold mt-1 truncate">ถูกสั่งไป {mostSoldTopping.quantity} ครั้ง</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
