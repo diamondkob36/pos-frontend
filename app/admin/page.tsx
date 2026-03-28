@@ -3,11 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
-
 // 🌟 นำเข้า 3 Components ที่เราเพิ่งสร้าง
-import CategoryManager from "../components/CategoryManager";
-import ProductManager from "../components/ProductManager";
-import ToppingManager from "../components/ToppingManager";
+import CategoryManager from "./_components/CategoryManager";
+import ProductManager from "./_components/ProductManager";
+import ToppingManager from "./_components/ToppingManager";
 
 export default function AdminPage() {
   const router = useRouter();

@@ -2,14 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import CashierHeader from "./components/CashierHeader";
-import ProductCard from "./components/ProductCard";
-import CartPanel from "./components/CartPanel";
-
-// 🌟 นำเข้า Modals ทั้ง 3 ตัว
-import CheckoutModal from "./components/CheckoutModal";
-import ProductOptionModal from "./components/ProductOptionModal";
-import ToppingModal from "./components/ToppingModal";
+import CashierHeader from "./_components/CashierHeader";
+import ProductCard from "./_components/ProductCard";
+import CartPanel from "./_components/CartPanel";
+import CheckoutModal from "./_components/CheckoutModal";
+import ProductOptionModal from "./_components/ProductOptionModal";
+import ToppingModal from "./_components/ToppingModal";
 
 const DEFAULT_TYPES = [ { name: "ร้อน", price: -5 }, { name: "เย็น", price: 0 }, { name: "ปั่น", price: 10 } ];
 const NORMAL_SIZES = [ { name: "S", price: -5 }, { name: "M", price: 0 }, { name: "L", price: 5 } ];

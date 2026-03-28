@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import Sidebar from "../components/Sidebar";
-import StatCards from "../components/StatCards";
-import SalesCharts from "../components/SalesCharts";
-import OrderList from "../components/OrderList";
+
+import StatCards from "./_components/StatCards";
+import SalesCharts from "./_components/SalesCharts";
+import OrderList from "./_components/OrderList";
 
 export default function HistoryPage() {
   const [orders, setOrders] = useState<any[]>([]);
