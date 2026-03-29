@@ -1,31 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../../components/Sidebar";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function UsersPage() {
-  const router = useRouter();
+  const { currentUser } = useAuth("manager");
   const [users, setUsers] = useState<any[]>([]);
-  
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("cashier");
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // เช็คสิทธิ์
+  // 🌟 4. ดึงข้อมูลพนักงานเฉพาะตอนที่เช็คสิทธิ์ manager ผ่านแล้ว
   useEffect(() => {
-    const userStr = localStorage.getItem("pos_user");
-    if (!userStr) { router.push("/login"); return; }
-    const user = JSON.parse(userStr);
-    if (user.role !== "manager") {
-      alert("เฉพาะผู้จัดการเท่านั้นครับ!");
-      router.push("/");
-    } else {
+    if (currentUser?.role === "manager") {
       fetchUsers();
     }
-  }, [router]);
+  }, [currentUser]);
 
   const fetchUsers = async () => {
     const res = await fetch("http://localhost:3001/users");
@@ -53,6 +46,9 @@ export default function UsersPage() {
       fetchUsers();
     }
   };
+
+  // 🌟 5. ถ้ายังโหลดข้อมูลคนล็อกอินไม่เสร็จ หรือไม่ใช่ manager ไม่ต้องแสดงหน้าต่าง
+  if (!currentUser || currentUser.role !== "manager") return null;
 
   return (
     <div className="flex min-h-screen bg-gray-50">

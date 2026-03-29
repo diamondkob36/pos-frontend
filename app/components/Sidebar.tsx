@@ -1,28 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  useEffect(() => {
-    // ดึงข้อมูลคนล็อกอินมาแสดง
-    const userStr = localStorage.getItem("pos_user");
-    if (userStr) {
-      setCurrentUser(JSON.parse(userStr));
-    }
-  }, []);
-
-  const handleLogout = () => {
-    if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
-      localStorage.removeItem("pos_user"); // ลบข้อมูลการล็อกอินทิ้ง
-      router.push("/login"); // เด้งกลับไปหน้าล็อกอิน
-    }
-  };
+  // 🔌 ใช้ Hook แทนการดึง LocalStorage เอง
+  const { currentUser, handleLogout } = useAuth();
 
   return (
     <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col shrink-0 print:hidden hidden md:flex">
@@ -30,24 +15,34 @@ export default function Sidebar() {
         <h2 className="text-2xl font-bold text-white tracking-wide">POS System</h2>
         <p className="text-gray-400 text-sm mt-1">Management Panel</p>
       </div>
-      <nav className="flex-1 px-4 space-y-2">
-        <Link href="/" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-          <span className="text-xl">🛒</span> หน้าแคชเชียร์
-        </Link>
+      <nav className="flex-1 px-4 space-y-1">
+        <div className="pb-2">
+          <p className="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">หน้าร้าน</p>
+          <Link href="/" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+            <span className="text-xl">🛒</span> หน้าแคชเชียร์
+          </Link>
+        </div>
         
         {/* 🌟 ซ่อนปุ่มเหล่านี้ถ้าไม่ใช่ผู้จัดการ */}
         {currentUser?.role === 'manager' && (
-          <>
+          <div className="pt-2 border-t border-gray-800 space-y-1">
+            <p className="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 mt-2">หลังร้าน (Admin)</p>
             <Link href="/history" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/history' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
               <span className="text-xl">📊</span> ประวัติยอดขาย
             </Link>
-            <Link href="/admin" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/admin' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-              <span className="text-xl">⚙️</span> จัดการหลังร้าน
+            <Link href="/admin/categories" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/admin/categories' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+              <span className="text-xl">🗂️</span> หมวดหมู่สินค้า
             </Link>
-            <Link href="/users" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/users' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+            <Link href="/admin/products" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/admin/products' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+              <span className="text-xl">☕</span> เมนูสินค้า
+            </Link>
+            <Link href="/admin/toppings" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/admin/toppings' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+              <span className="text-xl">✨</span> ท็อปปิ้ง
+            </Link>
+            <Link href="/admin/users" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/admin/users' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
               <span className="text-xl">👥</span> จัดการพนักงาน
             </Link>
-          </>
+          </div>
         )}
       </nav>
 
