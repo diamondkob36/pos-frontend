@@ -1,113 +1,168 @@
 "use client";
+import { useState } from "react";
 
-import { useState, useEffect } from "react";
+export default function ToppingManager({ toppings, categories, fetchData }: any) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
-export default function ToppingManager({ toppings, categories, fetchData }: { toppings: any[], categories: any[], fetchData: () => void }) {
-  const [toppingName, setToppingName] = useState("");
-  const [toppingPrice, setToppingPrice] = useState("");
-  const [toppingImage, setToppingImage] = useState("");
-  const [toppingCategory, setToppingCategory] = useState("");
-  const [editingToppingId, setEditingToppingId] = useState<number | null>(null);
-  const [toppingFilter, setToppingFilter] = useState("all");
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [image, setImage] = useState("");
+  const [category, setCategory] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
 
-  useEffect(() => {
-    if (categories.length > 0 && !toppingCategory) setToppingCategory(categories[0].value);
-  }, [categories]);
+  // 🌟 State สำหรับค้นหาและกรองหมวดหมู่
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCat, setFilterCat] = useState("all");
+
+  const openAddModal = () => {
+    setName(""); setPrice(""); setImage(""); setCategory(""); setIsAvailable(true); setEditingId(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (t: any) => {
+    setName(t.name); setPrice(t.price); setImage(t.image); setCategory(t.category); setIsAvailable(t.isAvailable ?? true); setEditingId(t.id);
+    setIsModalOpen(true);
+  };
 
   const handleSaveTopping = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!category || category === "") return alert("❌ กรุณาเลือกหมวดหมู่ก่อนบันทึกครับ");
 
-    // 🌟 1. ดักจับ: ถ้ายังไม่เลือกหมวดหมู่ ให้เด้งเตือนและหยุดการทำงานทันที
-    if (!toppingCategory || toppingCategory === "") {
-      alert("❌ กรุณาเลือกหมวดหมู่สำหรับท็อปปิ้งก่อนบันทึกครับ");
-      return; 
-    }
-
-    // 🌟 2. เพิ่ม isAvailable เข้าไปใน Payload
-    // (อย่าลืมว่าต้องมี const [isAvailable, setIsAvailable] = useState(true); สร้างไว้ด้านบนด้วยนะครับ)
-    const payload = { 
-      name: toppingName, 
-      price: Number(toppingPrice), 
-      image: toppingImage, 
-      category: toppingCategory,
-      isAvailable // <-- ตัวบอกสถานะท็อปปิ้งหมด
-    };
-    
-    const url = editingToppingId ? `http://localhost:3001/toppings/${editingToppingId}` : "http://localhost:3001/toppings";
-    const method = editingToppingId ? "PUT" : "POST";
+    const payload = { name, price: Number(price), image, category, isAvailable };
+    const url = editingId ? `http://localhost:3001/toppings/${editingId}` : "http://localhost:3001/toppings";
+    const method = editingId ? "PUT" : "POST";
 
     await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    
-    // 🌟 3. ตอนล้างค่าในฟอร์ม (Reset) ให้เซ็ต toppingCategory กลับเป็นค่าว่าง ("")
-    setToppingName(""); 
-    setToppingPrice(""); 
-    setToppingImage(""); 
-    setToppingCategory(""); // <-- กลับไปเป็น "-- ยังไม่ได้เลือกหมวดหมู่ --"
-    setIsAvailable(true);   // <-- รีเซ็ตให้พร้อมขายเหมือนเดิม
-    setEditingToppingId(null);
-    
-    fetchData(); // ดึงข้อมูลใหม่มาโชว์
+    setIsModalOpen(false);
+    fetchData();
   };
 
-  const handleEditTopping = (t: any) => {
-    setToppingName(t.name); setToppingPrice(t.price); setToppingImage(t.image || ""); setToppingCategory(t.category || categories[0]?.value); setEditingToppingId(t.id);
+  const toggleAvailable = async (t: any) => {
+    const payload = { ...t, isAvailable: !(t.isAvailable ?? true) };
+    await fetch(`http://localhost:3001/toppings/${t.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    fetchData();
   };
 
-  const handleDeleteTopping = async (id: number) => {
-    if (confirm("ลบท็อปปิ้งนี้?")) {
-      await fetch(`http://localhost:3001/toppings/${id}`, { method: "DELETE" });
+  const toggleActive = async (t: any) => {
+    const newActive = !(t.isActive ?? true);
+    if (confirm(`ต้องการ ${newActive ? 'เปิด' : 'ปิด'} การขายท็อปปิ้งนี้ใช่หรือไม่?`)) {
+      const payload = { ...t, isActive: newActive };
+      await fetch(`http://localhost:3001/toppings/${t.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       fetchData();
     }
   };
 
-  const filteredToppings = toppingFilter === "all" ? toppings : toppings.filter(t => t.category === toppingFilter);
-  const getCategoryLabel = (val: string) => categories.find(c => c.value === val)?.label || val;
+  // 🌟 กรองข้อมูลตามคำค้นหาและหมวดหมู่
+  const filteredToppings = toppings.filter((t: any) => {
+    const matchSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchCat = filterCat === "all" || t.category === filterCat;
+    return matchSearch && matchCat;
+  });
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col max-h-[85vh]">
-      <h2 className="text-xl font-bold mb-4 text-purple-600 shrink-0">✨ จัดการท็อปปิ้ง</h2>
-      <form onSubmit={handleSaveTopping} className="mb-4 grid grid-cols-2 gap-3 bg-gray-50 p-4 rounded-xl shrink-0 border border-gray-200">
-        <input type="text" placeholder="ชื่อท็อปปิ้ง" value={toppingName} onChange={e => setToppingName(e.target.value)} required className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 font-medium bg-white text-gray-900" />
-        <input type="number" placeholder="ราคา (+บาท)" value={toppingPrice} onChange={e => setToppingPrice(e.target.value)} required className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 font-medium bg-white text-gray-900" />
-        <input type="text" placeholder="URL รูปภาพ (เสริม)" value={toppingImage} onChange={e => setToppingImage(e.target.value)} className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 col-span-2 font-medium bg-white text-gray-900" />
-        
-        <select value={toppingCategory} onChange={e => setToppingCategory(e.target.value)} className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 col-span-2 font-bold bg-white cursor-pointer text-gray-900">
-          {/* 🌟 1. แทรก Option นี้เข้าไปเป็นตัวแรก */}
-          <option value="" disabled>-- ยังไม่ได้เลือกหมวดหมู่ --</option>
-          {categories.map(c => <option key={c.id} value={c.value}>🗂️ ใช้สำหรับ: {c.label}</option>)}
-          {categories.length === 0 && <option value="">(สร้างหมวดหมู่ก่อน)</option>}
-        </select>
-
-        <button type="submit" disabled={categories.length === 0} className={`col-span-2 py-2.5 rounded-lg font-bold ${categories.length === 0 ? 'bg-gray-400 text-white' : 'bg-purple-600 text-white hover:bg-purple-700'}`}>
-          {editingToppingId ? "อัปเดตท็อปปิ้ง" : "+ เพิ่มท็อปปิ้งใหม่"}
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-160px)]">
+      
+      {/* 🌟 Header: ช่องค้นหา และปุ่มเพิ่มรายการ */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
+        <div className="relative w-full sm:max-w-md">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
+          <input 
+            type="text" 
+            placeholder="ค้นหาท็อปปิ้ง..." 
+            value={searchTerm} 
+            onChange={e => setSearchTerm(e.target.value)} 
+            className="w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition-colors font-medium text-gray-800"
+          />
+        </div>
+        <button onClick={openAddModal} className="w-full sm:w-auto bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md transition-all text-lg shrink-0">
+          + เพิ่มท็อปปิ้ง
         </button>
-      </form>
+      </div>
 
-      <div className="flex gap-2 mb-3 shrink-0 overflow-x-auto pb-2 custom-scrollbar">
-        <button onClick={() => setToppingFilter("all")} className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-bold ${toppingFilter === "all" ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-600"}`}>ทั้งหมด</button>
-        {categories.map(c => (
-          <button key={c.id} onClick={() => setToppingFilter(c.value)} className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-bold ${toppingFilter === c.value ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-600"}`}>ของ {c.label}</button>
+      {/* 🌟 ตัวกรองหมวดหมู่ */}
+      <div className="flex gap-2 overflow-x-auto pb-4 shrink-0 border-b border-gray-100 mb-4 custom-scrollbar">
+        <button onClick={() => setFilterCat("all")} className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm border ${filterCat === "all" ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>ทั้งหมด</button>
+        {categories.map((c: any) => (
+          <button key={c.id} onClick={() => setFilterCat(c.value)} className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm border ${filterCat === c.value ? "bg-purple-600 text-white border-purple-600" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>{c.label}</button>
         ))}
       </div>
 
-      <div className="space-y-3 overflow-y-auto flex-1 pr-2">
-        {filteredToppings.map(t => (
-          <div key={t.id} className="flex justify-between items-center p-3 border border-gray-100 rounded-xl hover:bg-gray-50 bg-white">
-            <div className="flex items-center gap-3">
-              {t.image ? <img src={t.image} className="w-12 h-12 object-cover rounded-full border" alt={t.name} /> : <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center text-xl font-bold">✨</div>}
-              <div>
-                <p className="font-bold text-gray-800">{t.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">+{t.price} บาท • {getCategoryLabel(t.category)}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => handleEditTopping(t)} className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-bold">แก้</button>
-              <button onClick={() => handleDeleteTopping(t.id)} className="px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-xs font-bold">ลบ</button>
-            </div>
+      {/* 🌟 พื้นที่รายการท็อปปิ้ง (Scroll ได้) */}
+      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        {filteredToppings.length === 0 ? (
+           <div className="text-center py-20 text-gray-400 font-medium border-2 border-dashed rounded-xl">ไม่พบท็อปปิ้งที่ค้นหาครับ</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8">
+            {filteredToppings.map((t: any) => {
+              const isActive = t.isActive ?? true;
+              const available = t.isAvailable ?? true;
+              
+              return (
+                <div key={t.id} className={`p-4 border-2 rounded-xl flex flex-col gap-3 transition-all ${!isActive ? 'bg-gray-50 border-gray-200 opacity-80' : 'bg-white hover:border-purple-200 hover:shadow-md'}`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-lg text-gray-800">{t.name} <span className="text-purple-600 font-black ml-2">+฿{t.price}</span></h3>
+                      <p className="text-sm text-gray-500 font-medium mt-1">🗂️ ใช้สำหรับ: {categories.find((c:any) => c.value === t.category)?.label || t.category}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 text-xs font-bold mt-1">
+                    <span className={`px-2 py-1 rounded ${isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{isActive ? '✅ ขายอยู่' : '🛑 ปิดการขาย'}</span>
+                    <span className={`px-2 py-1 rounded ${available ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{available ? '📦 พร้อมขาย' : '⚠️ หมด'}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <button onClick={() => openEditModal(t)} className="bg-yellow-100 text-yellow-700 py-2.5 rounded-lg font-bold hover:bg-yellow-200">✏️ แก้ไข</button>
+                    {isActive ? (
+                      <button onClick={() => toggleActive(t)} className="bg-red-100 text-red-600 py-2.5 rounded-lg font-bold hover:bg-red-200">🗑️ ปิดการขาย</button>
+                    ) : (
+                      <button onClick={() => toggleActive(t)} className="bg-green-600 text-white py-2.5 rounded-lg font-bold hover:bg-green-700 shadow-sm border-b-2 border-green-800 active:border-b-0 active:translate-y-px">✅ เปิดขายอีกครั้ง</button>
+                    )}
+                    {isActive && (
+                       <button onClick={() => toggleAvailable(t)} className={`col-span-2 py-2.5 rounded-lg font-bold border-2 ${available ? 'border-orange-200 text-orange-600 hover:bg-orange-50' : 'border-purple-200 text-purple-600 hover:bg-purple-50'}`}>
+                         {available ? '👇 ตั้งเป็น "หมด"' : '📦 ตั้งเป็น "พร้อมขาย"'}
+                       </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
+        )}
       </div>
+
+      {/* 🌟 Pop-up Form */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm p-4" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl border border-gray-100" onClick={e => e.stopPropagation()}>
+            <h2 className="text-2xl font-black text-gray-800 mb-6 border-b pb-4">{editingId ? '✏️ แก้ไขท็อปปิ้ง' : '+ เพิ่มท็อปปิ้งใหม่'}</h2>
+            
+            <form onSubmit={handleSaveTopping} className="flex flex-col gap-4">
+              <input type="text" placeholder="ชื่อท็อปปิ้ง" value={name} onChange={e => setName(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold text-gray-800 bg-gray-50 focus:bg-white" />
+              <input type="number" placeholder="ราคาเพิ่ม (บาท)" value={price} onChange={e => setPrice(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold text-gray-800 bg-gray-50 focus:bg-white" />
+              <input type="text" placeholder="URL รูปท็อปปิ้ง (เลือกได้)" value={image} onChange={e => setImage(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 text-gray-800 bg-gray-50 focus:bg-white" />
+              
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold text-gray-800 bg-gray-50 focus:bg-white cursor-pointer">
+                <option value="" disabled>-- เลือกหมวดหมู่ --</option>
+                {categories.map((c:any) => <option key={c.id} value={c.value}>{c.label}</option>)}
+              </select>
+
+              <label className="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer bg-purple-50 border-purple-100 hover:bg-purple-100 transition-colors">
+                <input type="checkbox" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} className="w-6 h-6 accent-purple-600" />
+                <span className="font-bold text-purple-900 text-lg">สถานะ: {isAvailable ? '✅ พร้อมขาย' : '❌ หมด (ซ่อนชั่วคราว)'}</span>
+              </label>
+
+              <div className="flex gap-4 mt-6 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-xl font-bold text-lg hover:bg-gray-200">ยกเลิก</button>
+                <button type="submit" className="flex-1 bg-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-purple-700 shadow-lg border-b-4 border-purple-800 active:border-b-0 active:translate-y-1 transition-all">
+                  💾 บันทึกข้อมูล
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
