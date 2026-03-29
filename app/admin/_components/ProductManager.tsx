@@ -9,6 +9,7 @@ export default function ProductManager({ products, categories, fetchData }: { pr
   const [category, setCategory] = useState(""); 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [productFilter, setProductFilter] = useState("all");
+  const [isAvailable, setIsAvailable] = useState(true);
 
   useEffect(() => {
     if (categories.length > 0 && !category) setCategory(categories[0].value);
@@ -16,12 +17,35 @@ export default function ProductManager({ products, categories, fetchData }: { pr
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { name, price: Number(price), image, category };
+
+    // 🌟 1. ดักจับ: ถ้ายังไม่เลือกหมวดหมู่ ให้เด้งเตือนและหยุดการทำงานทันที
+    if (!category || category === "") {
+      alert("❌ กรุณาเลือกหมวดหมู่สินค้าก่อนบันทึกครับ");
+      return; 
+    }
+
+    // 🌟 2. เพิ่ม isAvailable เข้าไปใน Payload เพื่อส่งไปบอก Database ว่าของหมดหรือยัง
+    const payload = { 
+      name, 
+      price: Number(price), 
+      image, 
+      category,
+      isAvailable // <-- เพิ่มตัวนี้เข้ามา
+    };
+    
     const url = editingId ? `http://localhost:3001/products/${editingId}` : "http://localhost:3001/products";
     const method = editingId ? "PUT" : "POST";
 
     await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    setName(""); setPrice(""); setImage(""); setCategory(categories[0]?.value || ""); setEditingId(null);
+    
+    // 🌟 3. ตอนล้างค่าในฟอร์ม (Reset) ให้เซ็ต category กลับเป็นค่าว่าง ("") แทนการดึงค่าตัวแรก
+    setName(""); 
+    setPrice(""); 
+    setImage(""); 
+    setCategory(""); // <-- แก้ตรงนี้เป็นค่าว่าง
+    setIsAvailable(true); // <-- รีเซ็ตให้กลับมาเป็นพร้อมขาย
+    setEditingId(null);
+    
     fetchData();
   };
 
@@ -48,6 +72,7 @@ export default function ProductManager({ products, categories, fetchData }: { pr
         <input type="text" placeholder="URL รูปภาพ" value={image} onChange={e => setImage(e.target.value)} required className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 col-span-2 font-medium bg-white text-gray-900" />
         
         <select value={category} onChange={e => setCategory(e.target.value)} className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 col-span-2 font-bold bg-white cursor-pointer text-gray-900">
+          <option value="" disabled>-- ยังไม่ได้เลือกหมวดหมู่ --</option>
           {categories.map(c => <option key={c.id} value={c.value}>🗂️ {c.label}</option>)}
           {categories.length === 0 && <option value="">(สร้างหมวดหมู่ก่อน)</option>}
         </select>

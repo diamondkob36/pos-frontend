@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import Sidebar from "../components/Sidebar";
@@ -9,33 +8,31 @@ import StatCards from "./_components/StatCards";
 import SalesCharts from "./_components/SalesCharts";
 import OrderList from "./_components/OrderList";
 
+// 🔌 นำเข้า useAuth
+import { useAuth } from "../hooks/useAuth";
+
 export default function HistoryPage() {
+  // 🔌 เสียบปลั๊กระบบเช็คสิทธิ์ บังคับให้เป็น "manager"
+  const { currentUser } = useAuth("manager");
+
   const [orders, setOrders] = useState<any[]>([]);
   const [dbToppings, setDbToppings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<string>("all");
-  const router = useRouter();
 
   useEffect(() => {
-    const userStr = localStorage.getItem("pos_user");
-    if (!userStr) { router.push("/login"); return; }
-    const user = JSON.parse(userStr);
-    if (user.role !== "manager") {
-      alert("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ครับ (เฉพาะผู้จัดการเท่านั้น) ❌");
-      router.push("/");
+    // 🌟 ดึงข้อมูลเมื่อมั่นใจว่าเป็น manager แล้วเท่านั้น
+    if (currentUser?.role === "manager") {
+      Promise.all([
+        fetch("http://localhost:3001/orders").then(res => res.json()),
+        fetch("http://localhost:3001/toppings").then(res => res.json())
+      ]).then(([ordersData, toppingsData]) => {
+        setOrders(ordersData); setDbToppings(toppingsData); setIsLoading(false);
+      }).catch((error) => {
+        console.error("ดึงข้อมูลไม่สำเร็จ:", error); setIsLoading(false);
+      });
     }
-  }, [router]);
-
-  useEffect(() => {
-    Promise.all([
-      fetch("http://localhost:3001/orders").then(res => res.json()),
-      fetch("http://localhost:3001/toppings").then(res => res.json())
-    ]).then(([ordersData, toppingsData]) => {
-      setOrders(ordersData); setDbToppings(toppingsData); setIsLoading(false);
-    }).catch((error) => {
-      console.error("ดึงข้อมูลไม่สำเร็จ:", error); setIsLoading(false);
-    });
-  }, []);
+  }, [currentUser]);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "-";

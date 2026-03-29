@@ -9,6 +9,7 @@ export default function ToppingManager({ toppings, categories, fetchData }: { to
   const [toppingCategory, setToppingCategory] = useState("");
   const [editingToppingId, setEditingToppingId] = useState<number | null>(null);
   const [toppingFilter, setToppingFilter] = useState("all");
+  const [isAvailable, setIsAvailable] = useState(true);
 
   useEffect(() => {
     if (categories.length > 0 && !toppingCategory) setToppingCategory(categories[0].value);
@@ -16,13 +17,37 @@ export default function ToppingManager({ toppings, categories, fetchData }: { to
 
   const handleSaveTopping = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { name: toppingName, price: Number(toppingPrice), category: toppingCategory, image: toppingImage };
+
+    // 🌟 1. ดักจับ: ถ้ายังไม่เลือกหมวดหมู่ ให้เด้งเตือนและหยุดการทำงานทันที
+    if (!toppingCategory || toppingCategory === "") {
+      alert("❌ กรุณาเลือกหมวดหมู่สำหรับท็อปปิ้งก่อนบันทึกครับ");
+      return; 
+    }
+
+    // 🌟 2. เพิ่ม isAvailable เข้าไปใน Payload
+    // (อย่าลืมว่าต้องมี const [isAvailable, setIsAvailable] = useState(true); สร้างไว้ด้านบนด้วยนะครับ)
+    const payload = { 
+      name: toppingName, 
+      price: Number(toppingPrice), 
+      image: toppingImage, 
+      category: toppingCategory,
+      isAvailable // <-- ตัวบอกสถานะท็อปปิ้งหมด
+    };
+    
     const url = editingToppingId ? `http://localhost:3001/toppings/${editingToppingId}` : "http://localhost:3001/toppings";
     const method = editingToppingId ? "PUT" : "POST";
 
     await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    setToppingName(""); setToppingPrice(""); setToppingImage(""); setToppingCategory(categories[0]?.value || ""); setEditingToppingId(null);
-    fetchData();
+    
+    // 🌟 3. ตอนล้างค่าในฟอร์ม (Reset) ให้เซ็ต toppingCategory กลับเป็นค่าว่าง ("")
+    setToppingName(""); 
+    setToppingPrice(""); 
+    setToppingImage(""); 
+    setToppingCategory(""); // <-- กลับไปเป็น "-- ยังไม่ได้เลือกหมวดหมู่ --"
+    setIsAvailable(true);   // <-- รีเซ็ตให้พร้อมขายเหมือนเดิม
+    setEditingToppingId(null);
+    
+    fetchData(); // ดึงข้อมูลใหม่มาโชว์
   };
 
   const handleEditTopping = (t: any) => {
@@ -48,6 +73,8 @@ export default function ToppingManager({ toppings, categories, fetchData }: { to
         <input type="text" placeholder="URL รูปภาพ (เสริม)" value={toppingImage} onChange={e => setToppingImage(e.target.value)} className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 col-span-2 font-medium bg-white text-gray-900" />
         
         <select value={toppingCategory} onChange={e => setToppingCategory(e.target.value)} className="p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 col-span-2 font-bold bg-white cursor-pointer text-gray-900">
+          {/* 🌟 1. แทรก Option นี้เข้าไปเป็นตัวแรก */}
+          <option value="" disabled>-- ยังไม่ได้เลือกหมวดหมู่ --</option>
           {categories.map(c => <option key={c.id} value={c.value}>🗂️ ใช้สำหรับ: {c.label}</option>)}
           {categories.length === 0 && <option value="">(สร้างหมวดหมู่ก่อน)</option>}
         </select>
