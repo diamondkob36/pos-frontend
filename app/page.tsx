@@ -96,8 +96,6 @@ export default function Home() {
 
   const confirmAddToCart = () => {
     const finalPrice = selectedProduct.price + (selectedType?.price || 0) + (selectedSize?.price || 0) + selectedToppings.reduce((sum:any, t:any) => sum + (t.price * t.qty), 0);
-    
-    // 🌟 เปลี่ยน @ เป็น ฿ ตรงจุดนี้ (เวลาเพิ่มลงตะกร้า)
     const toppingsString = selectedToppings.map((t:any) => `${t.name} ฿${t.price} x${t.qty}`).join(", ");
     
     const combinedSizeText = `${selectedType ? selectedType.name + " " : ""}${selectedSize ? "(" + selectedSize.name + ")" : ""}`.trim();
@@ -152,15 +150,17 @@ export default function Home() {
       <div className="print:hidden flex flex-col h-full overflow-hidden">
         <CashierHeader />
 
-        <main className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 sm:p-6 gap-6">
-          <section className="flex-1 flex flex-col overflow-hidden bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar shrink-0">
-              <button onClick={() => setProductFilter("all")} className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm border ${productFilter === "all" ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>ทั้งหมด</button>
-              {categories.map(c => <button key={c.id} onClick={() => setProductFilter(c.value)} className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm border ${productFilter === c.value ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>{c.label}</button>)}
+        {/* 🌟 ปรับลด Padding และ Gap เพื่อให้มีพื้นที่แสดงสินค้ามากขึ้นในจอเล็ก */}
+        <main className="flex-1 flex flex-col md:flex-row overflow-hidden p-2 sm:p-4 gap-3 sm:gap-4">
+          <section className="flex-1 flex flex-col overflow-hidden bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex gap-2 mb-3 sm:mb-4 overflow-x-auto pb-2 custom-scrollbar shrink-0">
+              <button onClick={() => setProductFilter("all")} className={`flex-shrink-0 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm border ${productFilter === "all" ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>ทั้งหมด</button>
+              {categories.map(c => <button key={c.id} onClick={() => setProductFilter(c.value)} className={`flex-shrink-0 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm border ${productFilter === c.value ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>{c.label}</button>)}
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-4">
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-1">
+            <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar pb-4">
+              {/* 🌟 ปรับคอลัมน์: จอเล็กสุด 2 -> แท็บเล็ตแนวตั้ง 3 -> แท็บเล็ตพร้อมตะกร้า 2 -> จอใหญ่ 3,4,5 */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 p-1">
                 {isLoading ? ( <div className="col-span-full flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div> ) 
                 : filteredProducts.length === 0 ? ( <div className="col-span-full text-center py-12 text-gray-600 font-medium bg-gray-50 rounded-2xl border border-gray-100 border-dashed">ไม่มีสินค้าในหมวดหมู่นี้</div> ) 
                 : ( filteredProducts.map((product) => ( <ProductCard key={product.id} product={product} onClick={() => openOptionModal(product)} /> )) )}
