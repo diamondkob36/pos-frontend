@@ -28,7 +28,6 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
     e.preventDefault();
     if (!category || category === "") return alert("❌ กรุณาเลือกหมวดหมู่ก่อนบันทึกครับ");
 
-    // 🌟 ดักจับราคาห้ามติดลบ
     if (Number(price) < 0) return alert("❌ ราคาท็อปปิ้งไม่สามารถติดลบได้ครับ (แต่ตั้งเป็นฟรี 0 บาทได้)");
 
     const payload = { name, price: Number(price), image, category, isAvailable };
@@ -67,14 +66,14 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
         <div className="relative w-full sm:max-w-md">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
-          <input type="text" placeholder="ค้นหาท็อปปิ้ง..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none focus:border-purple-500 bg-gray-50 focus:bg-white font-medium text-gray-800" />
+          <input type="text" placeholder="ค้นหาท็อปปิ้ง..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none focus:border-purple-500 bg-gray-50 focus:bg-white font-medium text-gray-800 transition-colors" />
         </div>
-        <button onClick={openAddModal} className="w-full sm:w-auto bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md shrink-0">+ เพิ่มท็อปปิ้ง</button>
+        <button onClick={openAddModal} className="w-full sm:w-auto bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md active:scale-95 transition-all shrink-0">+ เพิ่มท็อปปิ้ง</button>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-4 shrink-0 border-b border-gray-100 mb-4 custom-scrollbar">
-        <button onClick={() => setFilterCat("all")} className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold border ${filterCat === "all" ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-600 border-gray-200"}`}>ทั้งหมด</button>
-        {categories.map((c: any) => <button key={c.id} onClick={() => setFilterCat(c.value)} className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold border ${filterCat === c.value ? "bg-purple-600 text-white border-purple-600" : "bg-white text-gray-600 border-gray-200"}`}>{c.label}</button>)}
+        <button onClick={() => setFilterCat("all")} className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold border transition-colors ${filterCat === "all" ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>ทั้งหมด</button>
+        {categories.map((c: any) => <button key={c.id} onClick={() => setFilterCat(c.value)} className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold border transition-colors ${filterCat === c.value ? "bg-purple-600 text-white border-purple-600" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>{c.label}</button>)}
       </div>
 
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
@@ -83,9 +82,8 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
             {filteredToppings.map((t: any) => {
               const isActive = t.isActive ?? true; const available = t.isAvailable ?? true;
               return (
-                <div key={t.id} className={`p-5 border-2 rounded-2xl flex flex-col gap-4 ${!isActive ? 'bg-gray-50 border-gray-200 opacity-80 grayscale-[30%]' : 'bg-white border-purple-50'}`}>
+                <div key={t.id} className={`p-5 border-2 rounded-2xl flex flex-col gap-4 transition-all duration-300 ${!isActive ? 'bg-gray-50 border-gray-200 opacity-80 grayscale-[30%]' : 'bg-white border-purple-50 hover:shadow-md hover:border-purple-100'}`}>
                   
-                  {/* 🌟 ปรับโครงสร้างส่วนนี้ให้มีรูปภาพเหมือน ProductManager */}
                   <div className="flex gap-4 items-start">
                     {t.image ? (
                       <img src={t.image} className="w-20 h-20 object-cover rounded-xl border" alt={t.name} />
@@ -104,10 +102,21 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
                     <span className={`px-3 py-1 rounded-lg ${available ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{available ? '📦 พร้อมขาย' : '⚠️ หมด'}</span>
                   </div>
 
+                  {/* 🌟 ปรับปรุงปุ่มกด Hover, Active Effect และคำศัพท์ */}
                   <div className="grid grid-cols-2 gap-2 pt-2">
-                    <button onClick={() => openEditModal(t)} className="bg-yellow-100 text-yellow-700 py-3 rounded-xl font-bold">✏️ แก้ไข</button>
-                    {isActive ? <button onClick={() => toggleActive(t)} className="bg-red-100 text-red-600 py-3 rounded-xl font-bold">🗑️ ปิดการขาย</button> : <button onClick={() => toggleActive(t)} className="bg-green-600 text-white py-3 rounded-xl font-bold">✅ เปิดขายอีกครั้ง</button>}
-                    {isActive && <button onClick={() => toggleAvailable(t)} className={`col-span-2 py-3 rounded-xl font-bold border-2 ${available ? 'border-orange-200 text-orange-600' : 'border-purple-200 text-purple-600'}`}>{available ? '👇 ตั้งเป็น "หมด"' : '📦 ตั้งเป็น "พร้อมขาย"'}</button>}
+                    <button onClick={() => openEditModal(t)} className="bg-yellow-50 text-yellow-700 hover:bg-yellow-100 active:scale-95 transition-all py-3 rounded-xl font-bold">✏️ แก้ไข</button>
+                    
+                    {isActive ? (
+                      <button onClick={() => toggleActive(t)} className="bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 transition-all py-3 rounded-xl font-bold">🗑️ ปิดการขาย</button>
+                    ) : (
+                      <button onClick={() => toggleActive(t)} className="bg-green-600 text-white hover:bg-green-700 active:scale-95 transition-all py-3 rounded-xl font-bold shadow-sm">✅ เปิดขายอีกครั้ง</button>
+                    )}
+                    
+                    {isActive && (
+                      <button onClick={() => toggleAvailable(t)} className={`col-span-2 py-3 rounded-xl font-bold border-2 active:scale-[0.98] transition-all ${available ? 'border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300' : 'border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300'}`}>
+                        {available ? '🛑 ปรับสถานะเป็น "สินค้าหมด"' : '📦 ปรับสถานะเป็น "พร้อมขาย"'}
+                      </button>
+                    )}
                   </div>
 
                 </div>
@@ -118,28 +127,27 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm p-4" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white rounded-3xl p-8 w-full max-w-lg shadow-2xl border border-gray-100" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm p-4 transition-opacity" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-3xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={e => e.stopPropagation()}>
             <h2 className="text-2xl font-black text-gray-800 mb-6 border-b pb-4">{editingId ? '✏️ แก้ไขท็อปปิ้ง' : '+ เพิ่มท็อปปิ้งใหม่'}</h2>
             <form onSubmit={handleSaveTopping} className="flex flex-col gap-4">
-              <input type="text" placeholder="ชื่อท็อปปิ้ง" value={name} onChange={e => setName(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold bg-gray-50 focus:bg-white text-gray-800" />
-              {/* 🌟 บังคับในระดับ HTML ด้วย min="0" */}
-              <input type="number" min="0" placeholder="ราคาเพิ่ม (บาท)" value={price} onChange={e => setPrice(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold bg-gray-50 focus:bg-white text-gray-800" />
-              <input type="text" placeholder="URL รูปท็อปปิ้ง (เลือกได้)" value={image} onChange={e => setImage(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 bg-gray-50 focus:bg-white text-gray-800" />
+              <input type="text" placeholder="ชื่อท็อปปิ้ง" value={name} onChange={e => setName(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold bg-gray-50 focus:bg-white text-gray-800 transition-colors" />
+              <input type="number" min="0" placeholder="ราคาเพิ่ม (บาท)" value={price} onChange={e => setPrice(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold bg-gray-50 focus:bg-white text-gray-800 transition-colors" />
+              <input type="text" placeholder="URL รูปท็อปปิ้ง (เลือกได้)" value={image} onChange={e => setImage(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 bg-gray-50 focus:bg-white text-gray-800 transition-colors" />
               
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold bg-gray-50 focus:bg-white text-gray-800">
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold bg-gray-50 focus:bg-white text-gray-800 transition-colors cursor-pointer">
                 <option value="" disabled>-- เลือกหมวดหมู่ --</option>
                 {categories.map((c:any) => <option key={c.id} value={c.value}>{c.label}</option>)}
               </select>
 
-              <label className="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer bg-purple-50 border-purple-100">
+              <label className="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer bg-purple-50 border-purple-100 hover:bg-purple-100/50 transition-colors">
                 <input type="checkbox" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} className="w-6 h-6 accent-purple-600" />
                 <span className="font-bold text-purple-900 text-lg">สถานะ: {isAvailable ? '✅ พร้อมขาย' : '❌ หมด'}</span>
               </label>
 
               <div className="flex gap-4 mt-6 pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-xl font-bold">ยกเลิก</button>
-                <button type="submit" className="flex-1 bg-purple-600 text-white py-4 rounded-xl font-bold">💾 บันทึก</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95 transition-all py-4 rounded-xl font-bold">ยกเลิก</button>
+                <button type="submit" className="flex-1 bg-purple-600 text-white hover:bg-purple-700 active:scale-95 transition-all py-4 rounded-xl font-bold shadow-md">💾 บันทึก</button>
               </div>
             </form>
           </div>
