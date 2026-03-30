@@ -9,7 +9,7 @@ export default function CashierHeader() {
   const isAdmin = currentUser?.role === 'manager' || currentUser?.role === 'supervisor';
 
   return (
-    <header className="bg-white px-6 py-4 shadow-sm border-b flex flex-col md:flex-row justify-between items-center print:hidden gap-4">
+    <header className="bg-white px-6 py-4 shadow-sm border-b flex flex-col md:flex-row justify-between items-center print:hidden gap-4 mb-3 rounded-xl">
       
       {/* 🌟 ฝั่งซ้าย: โลโก้ + ข้อมูลพนักงาน */}
       <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
@@ -37,7 +37,7 @@ export default function CashierHeader() {
       {/* 🌟 ฝั่งขวา: ปุ่มเมนู */}
       <div className="flex gap-3 w-full md:w-auto">
         {isAdmin && (
-          <Link href="/admin/products" className="flex-1 md:flex-none bg-gray-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-900 transition-all flex justify-center items-center gap-2 shadow-sm border-b-2 border-black active:border-b-0 active:translate-y-px">
+          <Link href="/history" className="flex-1 md:flex-none bg-gray-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-900 transition-all flex justify-center items-center gap-2 shadow-sm border-b-2 border-black active:border-b-0 active:translate-y-px">
             <span className="text-md">⚙️</span>
             <span>จัดการหลังร้าน</span>
           </Link>

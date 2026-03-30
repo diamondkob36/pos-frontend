@@ -28,21 +28,27 @@ export default function Sidebar() {
         {isAdmin && (
           <div className="pt-2 border-t border-gray-800 space-y-1">
             <p className="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 mt-2">หลังร้าน (Admin)</p>
+            
             <Link href="/history" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/history' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
               <span className="text-xl">📊</span> ประวัติยอดขาย
             </Link>
-            <Link href="/admin/categories" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/admin/categories' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-              <span className="text-xl">🗂️</span> หมวดหมู่สินค้า
-            </Link>
+            
             <Link href="/admin/products" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/admin/products' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
               <span className="text-xl">☕</span> เมนูสินค้า
             </Link>
+            
             <Link href="/admin/toppings" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/admin/toppings' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
               <span className="text-xl">✨</span> ท็อปปิ้ง
             </Link>
+            
+            <Link href="/admin/categories" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/admin/categories' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+              <span className="text-xl">🗂️</span> หมวดหมู่สินค้า
+            </Link>
+            
             <Link href="/admin/users" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/admin/users' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
               <span className="text-xl">👥</span> จัดการพนักงาน
             </Link>
+            
           </div>
         )}
       </nav>
