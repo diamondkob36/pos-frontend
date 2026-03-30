@@ -12,7 +12,6 @@ import OrderList from "./_components/OrderList";
 import { useAuth } from "../hooks/useAuth";
 
 export default function HistoryPage() {
-  // 🔌 เสียบปลั๊กระบบเช็คสิทธิ์ บังคับให้เป็น "manager"
   const { currentUser } = useAuth(["manager", "supervisor"]);
 
   const [orders, setOrders] = useState<any[]>([]);
@@ -21,7 +20,6 @@ export default function HistoryPage() {
   const [timeFilter, setTimeFilter] = useState<string>("all");
 
   useEffect(() => {
-    // 🌟 ดึงข้อมูลเมื่อเป็น manager หรือ supervisor
     if (currentUser && (currentUser.role === "manager" || currentUser.role === "supervisor")) {
       Promise.all([
         fetch("http://localhost:3001/orders").then(res => res.json()),
@@ -77,7 +75,8 @@ export default function HistoryPage() {
       if (item.toppings) {
         item.toppings.split(',').map((t: string) => t.trim()).forEach((tStr: string) => {
           if (!tStr) return;
-          const match = tStr.match(/(.+?)(?:\s+@(\d+(?:\.\d+)?))?(?:\s+x(\d+))?$/);
+          // 🌟 อัปเดต Regex ให้ระบบคำนวณอ่านเจอทั้งเครื่องหมาย @ (บิลเก่า) และ ฿ (บิลใหม่)
+          const match = tStr.match(/(.+?)(?:\s+[@฿](\d+(?:\.\d+)?))?(?:\s+x(\d+))?$/);
           const tName = match ? match[1].trim() : tStr;
           const tPrice = match && match[2] ? parseFloat(match[2]) : (toppingPriceMap[tName] || 0);
           const tQty = match && match[3] ? parseInt(match[3], 10) : 1; 
@@ -121,7 +120,8 @@ export default function HistoryPage() {
         const itemTotal = itemPrice * itemQty;
         totalItemsCount += itemQty; totalItemsRevenue += itemTotal;
 
-        itemDetailsData.push({ "เลขที่บิล": order.dailyNumber || order.id || "-", "วันที่": formatDate(order.createdAt), "รายการสินค้า": (item.product?.name || "ไม่ทราบชื่อ") + (item.size ? ` [${item.size}]` : "") + (item.toppings ? ` +${item.toppings}` : ""), "ราคาต่อหน่วย (บาท)": itemPrice, "จำนวน (ชิ้น)": itemQty, "ยอดรวม (บาท)": itemTotal, "หมายเหตุ": item.note || "-" });
+        // 🌟 เพิ่ม .replace(/@/g, '฿') ตอนโหลดลง Excel
+        itemDetailsData.push({ "เลขที่บิล": order.dailyNumber || order.id || "-", "วันที่": formatDate(order.createdAt), "รายการสินค้า": (item.product?.name || "ไม่ทราบชื่อ") + (item.size ? ` [${item.size}]` : "") + (item.toppings ? ` +${item.toppings.replace(/@/g, '฿')}` : ""), "ราคาต่อหน่วย (บาท)": itemPrice, "จำนวน (ชิ้น)": itemQty, "ยอดรวม (บาท)": itemTotal, "หมายเหตุ": item.note || "-" });
       });
     });
 

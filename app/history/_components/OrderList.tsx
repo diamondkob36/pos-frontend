@@ -36,7 +36,10 @@ export default function OrderList({ filteredOrders, timeFilter, formatDate }: an
                           <span className="font-bold">{pName} <span className="text-gray-400 font-normal ml-1">x{pQty}</span></span>
                           <div className="text-[10px] text-gray-500 mt-0.5 space-y-0.5">
                             {item.size && <p>• {item.size}</p>}
-                            {item.toppings && <p>• ท็อปปิ้ง: {item.toppings}</p>}
+                            
+                            {/* 🌟 เปลี่ยน @ เป็น ฿ สำหรับบิลเก่าที่เคยสั่งไปแล้ว */}
+                            {item.toppings && <p>• ท็อปปิ้ง: {item.toppings.replace(/@/g, '฿')}</p>}
+                            
                             {item.note && <p className="text-orange-500">หมายเหตุ: {item.note}</p>}
                           </div>
                         </div>
