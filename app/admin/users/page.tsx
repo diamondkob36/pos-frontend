@@ -51,10 +51,24 @@ export default function UsersPage() {
 
   if (!currentUser || !["manager", "supervisor"].includes(currentUser.role)) return null;
 
-  const filteredUsers = users.filter((u: any) => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.username.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 🌟 ลอจิกการให้คะแนนตำแหน่ง (ค่าน้อย = อยู่บนสุด)
+  const roleWeight: Record<string, number> = {
+    manager: 1,
+    supervisor: 2,
+    cashier: 3
+  };
+
+  // 🌟 กรองข้อมูลตามคำค้นหา แล้วนำมาเรียงลำดับ (Sort) ตามน้ำหนักตำแหน่ง
+  const sortedAndFilteredUsers = users
+    .filter((u: any) => 
+      u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      u.username.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a: any, b: any) => {
+      const weightA = roleWeight[a.role] || 99;
+      const weightB = roleWeight[b.role] || 99;
+      return weightA - weightB; // เรียงจากน้อยไปมาก
+    });
 
   return (
     <div className="flex min-h-screen bg-gray-50 h-screen overflow-hidden">
@@ -81,12 +95,12 @@ export default function UsersPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {filteredUsers.length === 0 ? (
+              {sortedAndFilteredUsers.length === 0 ? (
                 <div className="text-center py-20 text-gray-400 font-medium border-2 border-dashed rounded-xl">ไม่พบพนักงานที่ค้นหาครับ</div>
               ) : (
                 <div className="space-y-4 pb-8">
-                  {filteredUsers.map(u => {
-                    // 🌟 ตรรกะ: Supervisor แก้ได้แค่ Cashier, Manager แก้ได้ทุกคน
+                  {/* 🌟 วนลูปวาดการ์ดพนักงานที่ถูกจัดเรียงแล้ว */}
+                  {sortedAndFilteredUsers.map(u => {
                     const canEdit = currentUser.role === 'manager' || (currentUser.role === 'supervisor' && u.role === 'cashier');
 
                     return (
@@ -110,7 +124,6 @@ export default function UsersPage() {
                               🔒 ไม่มีสิทธิ์
                             </div>
                           )}
-                          {/* ซ่อนปุ่มลบทิ้งถาวร */}
                         </div>
                       </div>
                     );
@@ -134,7 +147,6 @@ export default function UsersPage() {
               
               <select value={role} onChange={e => setRole(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white cursor-pointer">
                 <option value="cashier">🧑‍🍳 พนักงานหน้าร้าน (Cashier)</option>
-                {/* 🌟 Supervisor จะเพิ่มได้แค่ Cashier (ไม่เห็นตัวเลือก Manager/Supervisor) */}
                 {currentUser.role === 'manager' && (
                   <>
                     <option value="supervisor">⭐ หัวหน้างาน (Supervisor)</option>

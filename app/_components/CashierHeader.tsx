@@ -1,37 +1,52 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth } from "../hooks/useAuth";
 
-export default function CashierHeader({ currentUser, handleLogout }: { currentUser: any, handleLogout: () => void }) {
+export default function CashierHeader() {
+  const { currentUser, handleLogout } = useAuth();
+
+  const isAdmin = currentUser?.role === 'manager' || currentUser?.role === 'supervisor';
+
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-      <h1 className="text-3xl font-bold text-gray-800">ระบบ POS - หน้าจอแคชเชียร์</h1>
+    <header className="bg-white px-6 py-4 shadow-sm border-b flex flex-col md:flex-row justify-between items-center print:hidden gap-4">
       
-      <div className="flex flex-wrap items-center gap-3">
-        {currentUser && (
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
-            <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
-              {currentUser.name?.charAt(0) || "U"}
-            </div>
-            <div className="text-sm">
-              <p className="font-bold text-gray-800 leading-none mb-1">{currentUser.name}</p>
-              <p className="text-[10px] text-gray-700 uppercase font-bold">
-                {currentUser.role === 'manager' ? '👑 ผู้จัดการ' : '🧑‍🍳 แคชเชียร์'}
-              </p>
-            </div>
+      {/* 🌟 ฝั่งซ้าย: โลโก้ + ข้อมูลพนักงาน */}
+      <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+        <h1 className="text-2xl font-black text-gray-800 tracking-tight">POS System</h1>
+        
+        {/* เส้นคั่นแนวตั้ง (โชว์เฉพาะจอใหญ่) */}
+        <div className="hidden md:block h-8 w-px bg-gray-200"></div>
+        
+        {/* ป้ายชื่อพนักงาน */}
+        <div className="bg-blue-50/50 px-4 py-2 rounded-xl border border-blue-100 flex items-center gap-3">
+          <span className="text-2xl">
+            {currentUser?.role === 'manager' ? '👑' : currentUser?.role === 'supervisor' ? '⭐' : '🧑‍🍳'}
+          </span>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-gray-500 uppercase leading-none mb-1">
+              {currentUser?.role === 'manager' ? 'ผู้จัดการ (Manager)' : currentUser?.role === 'supervisor' ? 'หัวหน้างาน (Supervisor)' : 'แคชเชียร์ (Cashier)'}
+            </span>
+            <span className="text-sm text-blue-700 font-black leading-tight">
+              {currentUser?.name || "กำลังโหลด..."}
+            </span>
           </div>
-        )}
-
-        <button onClick={handleLogout} className="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl font-bold shadow-sm border border-red-100 hover:bg-red-100 transition-colors flex items-center gap-2">
-          🚪 ออกจากระบบ
-        </button>
-
-        {currentUser?.role === 'manager' && (
-          <Link href="/history" className="bg-white text-blue-600 px-5 py-2.5 rounded-xl font-bold shadow-sm border border-blue-200 hover:bg-blue-50 transition-colors flex items-center gap-2">
-            📊 หลังร้าน
+        </div>
+      </div>
+      
+      {/* 🌟 ฝั่งขวา: ปุ่มเมนู */}
+      <div className="flex gap-3 w-full md:w-auto">
+        {isAdmin && (
+          <Link href="/admin/products" className="flex-1 md:flex-none bg-gray-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-900 transition-all flex justify-center items-center gap-2 shadow-sm border-b-2 border-black active:border-b-0 active:translate-y-px">
+            <span className="text-md">⚙️</span>
+            <span>จัดการหลังร้าน</span>
           </Link>
         )}
+        
+        <button onClick={handleLogout} className="flex-1 md:flex-none bg-red-50 text-red-600 px-5 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-all flex justify-center items-center gap-2 border border-red-100">
+          🚪 ออกจากระบบ
+        </button>
       </div>
-    </div>
+    </header>
   );
 }

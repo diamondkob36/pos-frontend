@@ -21,15 +21,18 @@ export default function HistoryPage() {
   const [timeFilter, setTimeFilter] = useState<string>("all");
 
   useEffect(() => {
-    // 🌟 ดึงข้อมูลเมื่อมั่นใจว่าเป็น manager แล้วเท่านั้น
-    if (currentUser?.role === "manager") {
+    // 🌟 ดึงข้อมูลเมื่อเป็น manager หรือ supervisor
+    if (currentUser && (currentUser.role === "manager" || currentUser.role === "supervisor")) {
       Promise.all([
         fetch("http://localhost:3001/orders").then(res => res.json()),
         fetch("http://localhost:3001/toppings").then(res => res.json())
       ]).then(([ordersData, toppingsData]) => {
-        setOrders(ordersData); setDbToppings(toppingsData); setIsLoading(false);
+        setOrders(ordersData); 
+        setDbToppings(toppingsData); 
+        setIsLoading(false);
       }).catch((error) => {
-        console.error("ดึงข้อมูลไม่สำเร็จ:", error); setIsLoading(false);
+        console.error("ดึงข้อมูลไม่สำเร็จ:", error); 
+        setIsLoading(false);
       });
     }
   }, [currentUser]);

@@ -152,8 +152,8 @@ export default function Home() {
     <main className="min-h-screen bg-gray-100 p-8 print:bg-white print:p-0">
       
       <div className="print:hidden">
-        <CashierHeader currentUser={currentUser} handleLogout={handleLogout} />
-
+        <CashierHeader/>
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 flex flex-col h-[calc(100vh-140px)]">
             <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar shrink-0">
