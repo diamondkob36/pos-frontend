@@ -27,13 +27,35 @@ export default function ToppingModal({
                     const selectedItem = selectedToppings.find((selected:any) => selected.name === t.name);
                     const qty = selectedItem ? selectedItem.qty : 0;
                     
+                    // 🌟 ตรวจสอบสถานะพร้อมขายของท็อปปิ้ง
+                    const isAvailable = t.isAvailable ?? true;
+                    
                     return (
-                      <button key={t.id} onClick={() => handleToppingClick(t)} className={`relative p-3 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all active:scale-95 ${qty > 0 ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-transparent bg-white shadow-sm hover:border-blue-300 hover:shadow-md'}`}>
-                        {qty > 0 && <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-bold border-2 border-white shadow-sm z-10">x{qty}</div>}
-                        {t.image ? <img src={t.image} className="w-14 h-14 object-cover rounded-full shadow-sm border border-gray-100 bg-white" alt={t.name} /> : <div className="w-14 h-14 bg-purple-100 text-purple-500 rounded-full flex items-center justify-center text-2xl font-bold shadow-sm">✨</div>}
+                      <button 
+                        key={t.id} 
+                        onClick={isAvailable ? () => handleToppingClick(t) : undefined} 
+                        disabled={!isAvailable} // 🌟 ปิดการคลิกถ้าหมด
+                        className={`relative p-3 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all 
+                          ${!isAvailable ? 'opacity-70 grayscale cursor-not-allowed bg-gray-100 border-gray-200' // 🌟 สไตล์ท็อปปิ้งหมด
+                          : qty > 0 ? 'border-blue-500 bg-blue-50 shadow-md active:scale-95' 
+                          : 'border-transparent bg-white shadow-sm hover:border-blue-300 hover:shadow-md active:scale-95'}`}
+                      >
+                        {qty > 0 && isAvailable && <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-bold border-2 border-white shadow-sm z-10">x{qty}</div>}
+                        
+                        <div className="relative">
+                          {t.image ? <img src={t.image} className="w-14 h-14 object-cover rounded-full shadow-sm border border-gray-100 bg-white" alt={t.name} /> : <div className="w-14 h-14 bg-purple-100 text-purple-500 rounded-full flex items-center justify-center text-2xl font-bold shadow-sm">✨</div>}
+                          
+                          {/* 🌟 ป้ายทับรูปภาพเมื่อท็อปปิ้งหมด */}
+                          {!isAvailable && (
+                            <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] rounded-full flex items-center justify-center border border-red-100">
+                              <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md -rotate-[15deg] shadow-sm border border-white">หมด</span>
+                            </div>
+                          )}
+                        </div>
+
                         <div className="text-center leading-tight mt-1 w-full">
-                          <p className="text-xs font-bold text-gray-800 line-clamp-2 min-h-[2rem] flex items-center justify-center">{t.name}</p>
-                          <p className="text-xs text-blue-600 font-extrabold mt-1">+{t.price}฿</p>
+                          <p className={`text-xs font-bold line-clamp-2 min-h-[2rem] flex items-center justify-center ${isAvailable ? 'text-gray-800' : 'text-gray-500'}`}>{t.name}</p>
+                          <p className={`text-xs font-extrabold mt-1 ${isAvailable ? 'text-blue-600' : 'text-gray-400'}`}>+{t.price}฿</p>
                         </div>
                       </button>
                     );
