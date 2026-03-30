@@ -9,7 +9,7 @@ export default function CashierHeader() {
   const isAdmin = currentUser?.role === 'manager' || currentUser?.role === 'supervisor';
 
   return (
-    <header className="bg-white px-6 py-4 shadow-sm border-b flex flex-col md:flex-row justify-between items-center print:hidden gap-4 mb-3 rounded-xl">
+    <header className="bg-white px-6 py-4 shadow-sm border-b flex flex-col md:flex-row justify-between items-center print:hidden gap-4 m-6 mb-0.5 rounded-xl">
       
       {/* 🌟 ฝั่งซ้าย: โลโก้ + ข้อมูลพนักงาน */}
       <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
