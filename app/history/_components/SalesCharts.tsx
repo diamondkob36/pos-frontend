@@ -4,12 +4,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export default function SalesCharts({ topProductsChartData, topToppingsByRevenue }: any) {
   return (
-    <div className="space-y-8">
-      {/* กราฟแท่ง 5 อันดับเมนูขายดี */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h2 className="text-lg font-bold text-gray-700 mb-6">📈 5 อันดับเมนูขายดี (ตามรายได้)</h2>
+    <div className="flex flex-col gap-6 h-full min-h-0">
+      
+      {/* ครึ่งบน: กราฟแท่ง */}
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col flex-1 min-h-0">
+        <h2 className="text-lg font-bold text-gray-700 mb-4 shrink-0">📈 5 อันดับเมนูขายดี (ตามรายได้)</h2>
         {topProductsChartData.length > 0 ? (
-          <div className="h-72 w-full">
+          <div className="flex-1 min-h-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topProductsChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
@@ -27,21 +28,21 @@ export default function SalesCharts({ topProductsChartData, topToppingsByRevenue
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="h-72 flex items-center justify-center text-gray-400 font-medium">ไม่มีข้อมูลในช่วงเวลานี้</div>
+          <div className="flex-1 flex items-center justify-center text-gray-400 font-medium">ไม่มีข้อมูลในช่วงเวลานี้</div>
         )}
       </div>
 
-      {/* ลิสต์ 5 อันดับท็อปปิ้งทำเงิน */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+      {/* ครึ่งล่าง: ท็อปปิ้ง */}
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col flex-1 min-h-0">
+        <h2 className="text-lg font-bold text-gray-700 mb-4 shrink-0 flex items-center gap-2">
           <span>✨</span> 5 อันดับท็อปปิ้งทำรายได้สูงสุด
         </h2>
         {topToppingsByRevenue.length > 0 ? (
-          <div className="space-y-3">
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
             {topToppingsByRevenue.map((t: any, index: number) => (
-              <div key={index} className="flex justify-between items-center p-3 border border-gray-100 rounded-xl bg-gray-50">
+              <div key={index} className="flex justify-between items-center p-3 border border-gray-100 rounded-xl bg-gray-50 shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${index === 0 ? 'bg-yellow-100 text-yellow-600' : index === 1 ? 'bg-gray-200 text-gray-600' : index === 2 ? 'bg-orange-100 text-orange-600' : 'bg-blue-50 text-blue-500'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${index === 0 ? 'bg-yellow-100 text-yellow-600' : index === 1 ? 'bg-gray-200 text-gray-600' : index === 2 ? 'bg-orange-100 text-orange-600' : 'bg-blue-50 text-blue-500'}`}>
                     #{index + 1}
                   </div>
                   <div className="flex flex-col">
@@ -49,14 +50,14 @@ export default function SalesCharts({ topProductsChartData, topToppingsByRevenue
                     <span className="text-[10px] font-medium text-gray-500">ถูกสั่งไป {t.quantity} ครั้ง</span>
                   </div>
                 </div>
-                <div className="bg-white px-3 py-1.5 rounded-lg border border-pink-100 shadow-sm text-sm">
+                <div className="bg-white px-3 py-1.5 rounded-lg border border-pink-100 shadow-sm text-sm shrink-0">
                   <span className="font-black text-pink-600">฿{t.revenue.toLocaleString()}</span>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="py-8 text-center text-gray-400 font-medium border-2 border-dashed border-gray-100 rounded-xl">ไม่มีข้อมูลการสั่งท็อปปิ้ง</div>
+          <div className="flex-1 flex items-center justify-center text-gray-400 font-medium border-2 border-dashed border-gray-100 rounded-xl">ไม่มีข้อมูลการสั่งท็อปปิ้ง</div>
         )}
       </div>
     </div>

@@ -79,24 +79,37 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
 
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
         {filteredToppings.length === 0 ? <div className="text-center py-20 text-gray-400 font-medium border-2 border-dashed rounded-xl">ไม่พบท็อปปิ้งที่ค้นหาครับ</div> : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pb-8">
             {filteredToppings.map((t: any) => {
               const isActive = t.isActive ?? true; const available = t.isAvailable ?? true;
               return (
-                <div key={t.id} className={`p-4 border-2 rounded-xl flex flex-col gap-3 ${!isActive ? 'bg-gray-50 border-gray-200 opacity-80' : 'bg-white'}`}>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-800">{t.name} <span className="text-purple-600 ml-2">+฿{t.price}</span></h3>
-                    <p className="text-sm text-gray-500 mt-1">🗂️ ใช้สำหรับ: {categories.find((c:any) => c.value === t.category)?.label || t.category}</p>
+                <div key={t.id} className={`p-5 border-2 rounded-2xl flex flex-col gap-4 ${!isActive ? 'bg-gray-50 border-gray-200 opacity-80 grayscale-[30%]' : 'bg-white border-purple-50'}`}>
+                  
+                  {/* 🌟 ปรับโครงสร้างส่วนนี้ให้มีรูปภาพเหมือน ProductManager */}
+                  <div className="flex gap-4 items-start">
+                    {t.image ? (
+                      <img src={t.image} className="w-20 h-20 object-cover rounded-xl border" alt={t.name} />
+                    ) : (
+                      <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-xs">No Img</div>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg text-gray-800 line-clamp-1">{t.name}</h3>
+                      <p className="text-sm text-gray-500 mt-0.5">🗂️ หมวดหมู่: {categories.find((c:any) => c.value === t.category)?.label || t.category}</p>
+                      <p className="font-black text-purple-600 text-xl mt-1">+฿{t.price}</p>
+                    </div>
                   </div>
-                  <div className="flex gap-2 text-xs font-bold mt-1">
-                    <span className={`px-2 py-1 rounded ${isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{isActive ? '✅ ขายอยู่' : '🛑 ปิดการขาย'}</span>
-                    <span className={`px-2 py-1 rounded ${available ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{available ? '📦 พร้อมขาย' : '⚠️ หมด'}</span>
+
+                  <div className="flex gap-2 text-sm font-bold mt-auto pt-1">
+                    <span className={`px-3 py-1 rounded-lg ${isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{isActive ? '✅ ขายอยู่' : '🛑 ปิดการขาย'}</span>
+                    <span className={`px-3 py-1 rounded-lg ${available ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{available ? '📦 พร้อมขาย' : '⚠️ หมด'}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <button onClick={() => openEditModal(t)} className="bg-yellow-100 text-yellow-700 py-2.5 rounded-lg font-bold">✏️ แก้ไข</button>
-                    {isActive ? <button onClick={() => toggleActive(t)} className="bg-red-100 text-red-600 py-2.5 rounded-lg font-bold">🗑️ ปิดการขาย</button> : <button onClick={() => toggleActive(t)} className="bg-green-600 text-white py-2.5 rounded-lg font-bold">✅ เปิดขายอีกครั้ง</button>}
-                    {isActive && <button onClick={() => toggleAvailable(t)} className={`col-span-2 py-2.5 rounded-lg font-bold border-2 ${available ? 'border-orange-200 text-orange-600' : 'border-purple-200 text-purple-600'}`}>{available ? '👇 ตั้งเป็น "หมด"' : '📦 ตั้งเป็น "พร้อมขาย"'}</button>}
+
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <button onClick={() => openEditModal(t)} className="bg-yellow-100 text-yellow-700 py-3 rounded-xl font-bold">✏️ แก้ไข</button>
+                    {isActive ? <button onClick={() => toggleActive(t)} className="bg-red-100 text-red-600 py-3 rounded-xl font-bold">🗑️ ปิดการขาย</button> : <button onClick={() => toggleActive(t)} className="bg-green-600 text-white py-3 rounded-xl font-bold">✅ เปิดขายอีกครั้ง</button>}
+                    {isActive && <button onClick={() => toggleAvailable(t)} className={`col-span-2 py-3 rounded-xl font-bold border-2 ${available ? 'border-orange-200 text-orange-600' : 'border-purple-200 text-purple-600'}`}>{available ? '👇 ตั้งเป็น "หมด"' : '📦 ตั้งเป็น "พร้อมขาย"'}</button>}
                   </div>
+
                 </div>
               );
             })}
@@ -106,7 +119,7 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm p-4" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl border border-gray-100" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl p-8 w-full max-w-lg shadow-2xl border border-gray-100" onClick={e => e.stopPropagation()}>
             <h2 className="text-2xl font-black text-gray-800 mb-6 border-b pb-4">{editingId ? '✏️ แก้ไขท็อปปิ้ง' : '+ เพิ่มท็อปปิ้งใหม่'}</h2>
             <form onSubmit={handleSaveTopping} className="flex flex-col gap-4">
               <input type="text" placeholder="ชื่อท็อปปิ้ง" value={name} onChange={e => setName(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold bg-gray-50 focus:bg-white text-gray-800" />

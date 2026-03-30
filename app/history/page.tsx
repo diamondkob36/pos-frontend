@@ -145,12 +145,13 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar />
-      <main className="flex-1 p-8 h-screen overflow-y-auto">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <main className="flex-1 p-4 md:p-6 flex flex-col overflow-hidden">
+        
+        <div className="max-w-7xl mx-auto w-full h-full flex flex-col space-y-6">
           
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
             <div>
               <h1 className="text-3xl font-bold text-gray-800">📊 แดชบอร์ดสรุปยอดขาย</h1>
               <p className="text-gray-500 mt-1">ข้อมูลเชิงลึกและประวัติการขายทั้งหมด</p>
@@ -172,17 +173,15 @@ export default function HistoryPage() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
+            <div className="flex-1 flex justify-center items-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
           ) : (
             <>
-              {/* 🌟 1. ส่วนกล่องสรุปยอด */}
-              <StatCards totalRevenue={totalRevenue} totalOrders={totalOrders} mostSoldProduct={mostSoldProduct} mostSoldTopping={mostSoldTopping} />
+              <div className="shrink-0">
+                <StatCards totalRevenue={totalRevenue} totalOrders={totalOrders} mostSoldProduct={mostSoldProduct} mostSoldTopping={mostSoldTopping} />
+              </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* 🌟 2. ส่วนกราฟและจัดอันดับ */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 pb-2">
                 <SalesCharts topProductsChartData={topProductsChartData} topToppingsByRevenue={topToppingsByRevenue} />
-
-                {/* 🌟 3. ส่วนรายการบิล */}
                 <OrderList filteredOrders={filteredOrders} timeFilter={timeFilter} formatDate={formatDate} />
               </div>
             </>

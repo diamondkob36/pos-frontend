@@ -2,8 +2,11 @@
 
 export default function OrderList({ filteredOrders, timeFilter, formatDate }: any) {
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full min-h-[600px] max-h-[800px]">
-      <h2 className="text-lg font-bold text-gray-700 mb-4">📝 ประวัติบิล ({timeFilter === 'all' ? 'ทั้งหมด' : `${timeFilter} วันล่าสุด`})</h2>
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full min-h-0">
+      <h2 className="text-lg font-bold text-gray-700 mb-4 shrink-0">
+        📝 ประวัติบิล ({timeFilter === 'all' ? 'ทั้งหมด' : `${timeFilter} วันล่าสุด`})
+      </h2>
+      
       <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
         {filteredOrders.length === 0 ? (
           <div className="text-center text-gray-400 py-10">ไม่มีบิลในช่วงเวลานี้</div>
@@ -11,7 +14,7 @@ export default function OrderList({ filteredOrders, timeFilter, formatDate }: an
           filteredOrders.map((order: any) => {
             const orderTotal = order.items.reduce((sum: number, item: any) => sum + ((item.price || item.product.price) * item.quantity), 0);
             return (
-              <div key={order.id} className="border border-gray-100 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all bg-gray-50">
+              <div key={order.id} className="border border-gray-100 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all bg-gray-50 shrink-0">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <span className="font-bold text-gray-700 bg-white px-2 py-1 rounded text-xs border mr-2">
