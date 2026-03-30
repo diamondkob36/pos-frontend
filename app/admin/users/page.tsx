@@ -5,17 +5,20 @@ import Sidebar from "../../components/Sidebar";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function UsersPage() {
-  const { currentUser } = useAuth("manager");
+  const { currentUser } = useAuth(["manager", "supervisor"]);
+  
   const [users, setUsers] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("cashier");
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // 🌟 4. ดึงข้อมูลพนักงานเฉพาะตอนที่เช็คสิทธิ์ manager ผ่านแล้ว
   useEffect(() => {
-    if (currentUser?.role === "manager") {
+    if (currentUser && (currentUser.role === "manager" || currentUser.role === "supervisor")) {
       fetchUsers();
     }
   }, [currentUser]);
@@ -25,6 +28,16 @@ export default function UsersPage() {
     setUsers(await res.json());
   };
 
+  const openAddModal = () => {
+    setName(""); setUsername(""); setPassword(""); setRole("cashier"); setEditingId(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (u: any) => {
+    setName(u.name); setUsername(u.username); setPassword(""); setRole(u.role); setEditingId(u.id);
+    setIsModalOpen(true);
+  };
+
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { name, username, password, role };
@@ -32,68 +45,114 @@ export default function UsersPage() {
     const method = editingId ? "PUT" : "POST";
 
     await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    setName(""); setUsername(""); setPassword(""); setRole("cashier"); setEditingId(null);
+    setIsModalOpen(false);
     fetchUsers();
   };
 
-  const handleEdit = (u: any) => {
-    setName(u.name); setUsername(u.username); setPassword(""); setRole(u.role); setEditingId(u.id);
-  };
+  if (!currentUser || !["manager", "supervisor"].includes(currentUser.role)) return null;
 
-  const handleDelete = async (id: number) => {
-    if (confirm("ลบพนักงานคนนี้?")) {
-      await fetch(`http://localhost:3001/users/${id}`, { method: "DELETE" });
-      fetchUsers();
-    }
-  };
-
-  // 🌟 5. ถ้ายังโหลดข้อมูลคนล็อกอินไม่เสร็จ หรือไม่ใช่ manager ไม่ต้องแสดงหน้าต่าง
-  if (!currentUser || currentUser.role !== "manager") return null;
+  const filteredUsers = users.filter((u: any) => 
+    u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    u.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 h-screen overflow-hidden">
       <Sidebar />
-      <main className="flex-1 p-8 h-screen overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">👥 จัดการบัญชีพนักงาน</h1>
+      <main className="flex-1 p-8 flex flex-col min-w-0">
+        <div className="max-w-5xl mx-auto w-full h-full flex flex-col">
+          <h1 className="text-3xl font-bold text-gray-800 mb-8 shrink-0">👥 จัดการบัญชีพนักงาน</h1>
           
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-            <h2 className="text-xl font-bold mb-4 text-gray-700">{editingId ? "✏️ แก้ไขข้อมูลพนักงาน" : "+ เพิ่มพนักงานใหม่"}</h2>
-            <form onSubmit={handleSaveUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" placeholder="ชื่อ - นามสกุล" value={name} onChange={e => setName(e.target.value)} required className="p-3 border rounded-xl outline-none focus:border-blue-500 text-gray-700" />
-              <input type="text" placeholder="รหัสผู้ใช้งาน (Username)" value={username} onChange={e => setUsername(e.target.value)} required className="p-3 border rounded-xl outline-none focus:border-blue-500 text-gray-700"/>
-              <input type="password" placeholder={editingId ? "รหัสผ่านใหม่ (เว้นว่างไว้ถ้าไม่เปลี่ยน)" : "รหัสผ่าน"} value={password} onChange={e => setPassword(e.target.value)} required={!editingId} className="p-3 border rounded-xl outline-none focus:border-blue-500 text-gray-700" />
-              <select value={role} onChange={e => setRole(e.target.value)} className="p-3 border rounded-xl outline-none focus:border-blue-500 font-bold text-gray-700">
-                <option value="cashier">🧑‍🍳 พนักงานหน้าร้าน (Cashier)</option>
-                <option value="manager">👑 ผู้จัดการร้าน (Manager)</option>
-              </select>
-              <button type="submit" className="md:col-span-2 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-sm">
-                {editingId ? "บันทึกข้อมูล" : "สร้างบัญชี"}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col flex-1 min-h-0">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 border-b pb-4 shrink-0">
+              <div className="relative w-full sm:max-w-md">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
+                <input 
+                  type="text" 
+                  placeholder="ค้นหาชื่อ หรือ Username..." 
+                  value={searchTerm} 
+                  onChange={e => setSearchTerm(e.target.value)} 
+                  className="w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none focus:border-blue-500 bg-gray-50 focus:bg-white transition-colors font-medium text-gray-800"
+                />
+              </div>
+              <button onClick={openAddModal} className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-md text-lg transition-all shrink-0">
+                + เพิ่มพนักงาน
               </button>
-            </form>
-          </div>
+            </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold mb-4 text-gray-700">📋 รายชื่อพนักงานทั้งหมด</h2>
-            <div className="space-y-3">
-              {users.map(u => (
-                <div key={u.id} className="flex justify-between items-center p-4 border border-gray-100 rounded-xl hover:bg-gray-50">
-                  <div>
-                    <p className="font-bold text-gray-800 text-lg">{u.name}</p>
-                    <p className="text-sm text-gray-500">Username: {u.username} | สิทธิ์: <span className={u.role === 'manager' ? 'text-purple-600 font-bold' : 'text-blue-600'}>{u.role}</span></p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleEdit(u)} className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-bold">แก้ไข</button>
-                    {u.username !== 'admin' && ( // ซ่อนปุ่มลบสำหรับ admin หลัก
-                      <button onClick={() => handleDelete(u.id)} className="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-bold">ลบ</button>
-                    )}
-                  </div>
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              {filteredUsers.length === 0 ? (
+                <div className="text-center py-20 text-gray-400 font-medium border-2 border-dashed rounded-xl">ไม่พบพนักงานที่ค้นหาครับ</div>
+              ) : (
+                <div className="space-y-4 pb-8">
+                  {filteredUsers.map(u => {
+                    // 🌟 ตรรกะ: Supervisor แก้ได้แค่ Cashier, Manager แก้ได้ทุกคน
+                    const canEdit = currentUser.role === 'manager' || (currentUser.role === 'supervisor' && u.role === 'cashier');
+
+                    return (
+                      <div key={u.id} className="p-5 border-2 border-gray-100 rounded-2xl bg-white hover:border-gray-300 hover:shadow-sm transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <p className="font-black text-xl text-gray-800">{u.name}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-sm font-bold">👤 {u.username}</span>
+                            <span className={`px-3 py-1 rounded-lg text-sm font-bold ${u.role === 'manager' ? 'bg-purple-100 text-purple-700' : u.role === 'supervisor' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {u.role === 'manager' ? '👑 ผู้จัดการ (Manager)' : u.role === 'supervisor' ? '⭐ หัวหน้างาน (Supervisor)' : '🧑‍🍳 แคชเชียร์'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex w-full md:w-auto gap-3 shrink-0">
+                          {canEdit ? (
+                            <button onClick={() => openEditModal(u)} className="flex-1 md:flex-none px-6 py-3 bg-yellow-100 text-yellow-700 rounded-xl font-bold hover:bg-yellow-200 text-md transition-colors">
+                              ✏️ แก้ไข
+                            </button>
+                          ) : (
+                            <div className="flex-1 md:flex-none px-6 py-3 bg-gray-50 text-gray-400 rounded-xl font-bold border border-gray-100 text-center text-md cursor-not-allowed">
+                              🔒 ไม่มีสิทธิ์
+                            </div>
+                          )}
+                          {/* ซ่อนปุ่มลบทิ้งถาวร */}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
       </main>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm p-4" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl border border-gray-100" onClick={e => e.stopPropagation()}>
+            <h2 className="text-2xl font-black text-gray-800 mb-6 border-b pb-4">{editingId ? '✏️ แก้ไขข้อมูลพนักงาน' : '+ เพิ่มพนักงานใหม่'}</h2>
+            
+            <form onSubmit={handleSaveUser} className="flex flex-col gap-4">
+              <input type="text" placeholder="ชื่อ - นามสกุล" value={name} onChange={e => setName(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white" />
+              <input type="text" placeholder="รหัสผู้ใช้งาน (Username)" value={username} onChange={e => setUsername(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white"/>
+              <input type="password" placeholder={editingId ? "รหัสผ่านใหม่ (เว้นว่างไว้ถ้าไม่เปลี่ยน)" : "รหัสผ่าน"} value={password} onChange={e => setPassword(e.target.value)} required={!editingId} className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white" />
+              
+              <select value={role} onChange={e => setRole(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white cursor-pointer">
+                <option value="cashier">🧑‍🍳 พนักงานหน้าร้าน (Cashier)</option>
+                {/* 🌟 Supervisor จะเพิ่มได้แค่ Cashier (ไม่เห็นตัวเลือก Manager/Supervisor) */}
+                {currentUser.role === 'manager' && (
+                  <>
+                    <option value="supervisor">⭐ หัวหน้างาน (Supervisor)</option>
+                    <option value="manager">👑 ผู้จัดการร้าน (Manager)</option>
+                  </>
+                )}
+              </select>
+
+              <div className="flex gap-4 mt-6 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors">ยกเลิก</button>
+                <button type="submit" className="flex-1 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 transition-all">
+                  💾 บันทึก
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,12 +5,12 @@ import CategoryManager from "../_components/CategoryManager";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function CategoriesPage() {
-  const { currentUser } = useAuth("manager");
+  const { currentUser } = useAuth(["manager", "supervisor"]);
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (currentUser?.role === "manager") fetchData();
+    if (currentUser && ["manager", "supervisor"].includes(currentUser.role)) fetchData();
   }, [currentUser]);
 
   const fetchData = () => {
@@ -20,7 +20,7 @@ export default function CategoriesPage() {
     });
   };
 
-  if (!currentUser || currentUser.role !== "manager") return null;
+  if (!currentUser || !["manager", "supervisor"].includes(currentUser.role)) return null;
 
   return (
     <div className="flex min-h-screen bg-gray-50">

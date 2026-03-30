@@ -13,7 +13,7 @@ import { useAuth } from "../hooks/useAuth";
 
 export default function HistoryPage() {
   // 🔌 เสียบปลั๊กระบบเช็คสิทธิ์ บังคับให้เป็น "manager"
-  const { currentUser } = useAuth("manager");
+  const { currentUser } = useAuth(["manager", "supervisor"]);
 
   const [orders, setOrders] = useState<any[]>([]);
   const [dbToppings, setDbToppings] = useState<any[]>([]);

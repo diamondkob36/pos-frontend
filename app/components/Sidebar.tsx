@@ -6,8 +6,10 @@ import { useAuth } from "../hooks/useAuth";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  // 🔌 ใช้ Hook แทนการดึง LocalStorage เอง
   const { currentUser, handleLogout } = useAuth();
+
+  // 🌟 อนุญาตให้ทั้ง manager และ supervisor เห็นเมนูหลังบ้าน
+  const isAdmin = currentUser?.role === 'manager' || currentUser?.role === 'supervisor';
 
   return (
     <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col shrink-0 print:hidden hidden md:flex">
@@ -23,8 +25,7 @@ export default function Sidebar() {
           </Link>
         </div>
         
-        {/* 🌟 ซ่อนปุ่มเหล่านี้ถ้าไม่ใช่ผู้จัดการ */}
-        {currentUser?.role === 'manager' && (
+        {isAdmin && (
           <div className="pt-2 border-t border-gray-800 space-y-1">
             <p className="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 mt-2">หลังร้าน (Admin)</p>
             <Link href="/history" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${pathname === '/history' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
@@ -46,7 +47,6 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* 🌟 โซนด้านล่าง (โปรไฟล์ & ปุ่ม Logout) */}
       <div className="p-4 border-t border-gray-800 mt-auto">
         <div className="bg-gray-800 p-3 rounded-xl mb-3 flex items-center gap-3">
           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold">

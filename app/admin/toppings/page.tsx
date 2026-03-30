@@ -5,13 +5,13 @@ import ToppingManager from "../_components/ToppingManager";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function ToppingsPage() {
-  const { currentUser } = useAuth("manager");
+  const { currentUser } = useAuth(["manager", "supervisor"]);
   const [toppings, setToppings] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (currentUser?.role === "manager") fetchData();
+    if (currentUser && ["manager", "supervisor"].includes(currentUser.role)) fetchData();
   }, [currentUser]);
 
   const fetchData = () => {
@@ -24,7 +24,7 @@ export default function ToppingsPage() {
     });
   };
 
-  if (!currentUser || currentUser.role !== "manager") return null;
+  if (!currentUser || !["manager", "supervisor"].includes(currentUser.role)) return null;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
