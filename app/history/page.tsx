@@ -145,22 +145,23 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    // 🌟 1. อนุญาตให้เลื่อนขึ้นลงได้อิสระใน Tablet (min-h-screen) แต่ PC จะล็อก 100vh เหมือนเดิม
+    <div className="flex min-h-screen w-full bg-gray-50 lg:h-screen lg:overflow-hidden">
       <Sidebar />
-      <main className="flex-1 p-4 md:p-6 flex flex-col overflow-hidden">
+      <main className="flex-1 p-4 lg:p-6 flex flex-col min-w-0 lg:h-screen lg:overflow-hidden">
         
-        <div className="max-w-7xl mx-auto w-full h-full flex flex-col space-y-6">
+        <div className="max-w-7xl mx-auto w-full flex flex-col gap-4 lg:h-full">
           
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">📊 แดชบอร์ดสรุปยอดขาย</h1>
-              <p className="text-gray-500 mt-1">ข้อมูลเชิงลึกและประวัติการขายทั้งหมด</p>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">📊 แดชบอร์ดสรุปยอดขาย</h1>
+              <p className="text-gray-500 mt-1 text-sm lg:text-base">ข้อมูลเชิงลึกและประวัติการขายทั้งหมด</p>
             </div>
             
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-200 flex items-center gap-2">
-                <span className="text-sm text-gray-500 font-medium">📅 ดูข้อมูล:</span>
-                <select value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)} className="bg-transparent text-gray-800 font-bold text-sm focus:outline-none cursor-pointer">
+            <div className="flex flex-wrap items-center gap-2 lg:gap-3 w-full sm:w-auto">
+              <div className="bg-white px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-xl shadow-sm border border-gray-200 flex items-center gap-2 flex-1 sm:flex-none">
+                <span className="text-xs lg:text-sm text-gray-500 font-medium whitespace-nowrap">📅 ดูข้อมูล:</span>
+                <select value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)} className="bg-transparent w-full text-gray-800 font-bold text-xs lg:text-sm focus:outline-none cursor-pointer">
                   <option value="1">วันนี้ (24 ชม. ล่าสุด)</option>
                   <option value="7">7 วันย้อนหลัง</option>
                   <option value="14">14 วันย้อนหลัง</option>
@@ -168,7 +169,9 @@ export default function HistoryPage() {
                   <option value="all">ทั้งหมด</option>
                 </select>
               </div>
-              <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2.5 rounded-xl font-bold shadow-sm hover:bg-green-700 transition-colors flex items-center gap-2">📥 Export Excel</button>
+              <button onClick={exportToExcel} className="bg-green-600 text-white px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl font-bold shadow-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-xs lg:text-sm flex-1 sm:flex-none">
+                📥 Export
+              </button>
             </div>
           </div>
 
@@ -176,13 +179,23 @@ export default function HistoryPage() {
             <div className="flex-1 flex justify-center items-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
           ) : (
             <>
-              <div className="shrink-0">
+              <div className="shrink-0 overflow-x-auto pb-1 custom-scrollbar">
                 <StatCards totalRevenue={totalRevenue} totalOrders={totalOrders} mostSoldProduct={mostSoldProduct} mostSoldTopping={mostSoldTopping} />
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 pb-2">
-                <SalesCharts topProductsChartData={topProductsChartData} topToppingsByRevenue={topToppingsByRevenue} />
-                <OrderList filteredOrders={filteredOrders} timeFilter={timeFilter} formatDate={formatDate} />
+              {/* 🌟 2. ปลดล็อกความสูงในจอเล็ก ให้แสดงผลต่อกันยาวๆ (scroll ได้) */}
+              <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 flex-1 lg:min-h-0 pb-6 lg:pb-2">
+                
+                {/* 🌟 กล่องกราฟ: ใน Tablet จะสูงคงที่ 400px และใน PC จะแบ่งความสูงอัตโนมัติ */}
+                <div className="w-full lg:w-1/2 h-[500px] lg:h-auto lg:min-h-[250px] shrink-0">
+                  <SalesCharts topProductsChartData={topProductsChartData} topToppingsByRevenue={topToppingsByRevenue} />
+                </div>
+                
+                {/* 🌟 กล่องบิล: ใน Tablet จะสูงตามเนื้อหา และใน PC จะเลื่อนข้างในกล่อง */}
+                <div className="w-full lg:w-1/2 min-h-[400px] lg:min-h-0">
+                  <OrderList filteredOrders={filteredOrders} timeFilter={timeFilter} formatDate={formatDate} />
+                </div>
+
               </div>
             </>
           )}

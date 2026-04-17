@@ -28,7 +28,12 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
     e.preventDefault();
     if (!category || category === "") return alert("❌ กรุณาเลือกหมวดหมู่ก่อนบันทึกครับ");
 
-    if (Number(price) < 0) return alert("❌ ราคาท็อปปิ้งไม่สามารถติดลบได้ครับ (แต่ตั้งเป็นฟรี 0 บาทได้)");
+    // 🌟 ดักราคาติดลบ
+    const numericPrice = Number(price);
+    if (numericPrice < 0) {
+      alert("❌ ราคาท็อปปิ้งไม่สามารถติดลบได้ครับ (แต่ตั้งเป็น 0 ได้)");
+      return;
+    }
 
     const payload = { name, price: Number(price), image, category, isAvailable };
     const url = editingId ? `http://localhost:3001/toppings/${editingId}` : "http://localhost:3001/toppings";
@@ -132,7 +137,7 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
             <h2 className="text-2xl font-black text-gray-800 mb-6 border-b pb-4">{editingId ? '✏️ แก้ไขท็อปปิ้ง' : '+ เพิ่มท็อปปิ้งใหม่'}</h2>
             <form onSubmit={handleSaveTopping} className="flex flex-col gap-4">
               <input type="text" placeholder="ชื่อท็อปปิ้ง" value={name} onChange={e => setName(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold bg-gray-50 focus:bg-white text-gray-800 transition-colors" />
-              <input type="number" min="0" placeholder="ราคาเพิ่ม (บาท)" value={price} onChange={e => setPrice(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold bg-gray-50 focus:bg-white text-gray-800 transition-colors" />
+              <input type="number" min="0" onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }} placeholder="ราคาเพิ่ม (บาท)" value={price} onChange={e => setPrice(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold text-gray-800 bg-gray-50 focus:bg-white" />
               <input type="text" placeholder="URL รูปท็อปปิ้ง (เลือกได้)" value={image} onChange={e => setImage(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 bg-gray-50 focus:bg-white text-gray-800 transition-colors" />
               
               <select value={category} onChange={(e) => setCategory(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-purple-500 font-bold bg-gray-50 focus:bg-white text-gray-800 transition-colors cursor-pointer">

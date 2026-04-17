@@ -27,8 +27,13 @@ export default function ProductManager({ products = [], categories = [], fetchDa
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!category || category === "") return alert("❌ กรุณาเลือกหมวดหมู่สินค้าก่อนบันทึกครับ");
-    
-    if (Number(price) < 0) return alert("❌ ราคาไม่สามารถติดลบได้ครับ (แต่ตั้งเป็นฟรี 0 บาทได้)");
+
+    // 🌟 ดักราคาติดลบ
+    const numericPrice = Number(price);
+    if (numericPrice < 0) {
+      alert("❌ ราคาสินค้าไม่สามารถติดลบได้ครับ (แต่ตั้งเป็น 0 ได้)");
+      return;
+    }
 
     const payload = { name, price: Number(price), image, category, isAvailable };
     const url = editingId ? `http://localhost:3001/products/${editingId}` : "http://localhost:3001/products";
@@ -125,7 +130,7 @@ export default function ProductManager({ products = [], categories = [], fetchDa
             <h2 className="text-2xl font-black text-gray-800 mb-6 border-b pb-4">{editingId ? '✏️ แก้ไขข้อมูลเมนู' : '+ สร้างเมนูสินค้าใหม่'}</h2>
             <form onSubmit={handleSaveProduct} className="flex flex-col gap-4">
               <input type="text" placeholder="ชื่อเมนู" value={name} onChange={e => setName(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold bg-gray-50 focus:bg-white text-gray-800 transition-colors" />
-              <input type="number" min="0" placeholder="ราคา (บาท)" value={price} onChange={e => setPrice(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold bg-gray-50 focus:bg-white text-gray-800 transition-colors" />
+              <input type="number" min="0" onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}placeholder="ราคา (บาท)" value={price} onChange={e => setPrice(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white" />
               <input type="text" placeholder="URL รูปภาพ (วางลิงก์รูป)" value={image} onChange={e => setImage(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 bg-gray-50 focus:bg-white text-gray-800 transition-colors" />
               
               <select value={category} onChange={(e) => setCategory(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold bg-gray-50 focus:bg-white text-gray-800 transition-colors cursor-pointer">
