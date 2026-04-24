@@ -16,11 +16,28 @@ export default function ProductsPage() {
 
   const fetchData = () => {
     setIsLoading(true);
+    
+    // 🌟 1. ดึง Token จากเครื่อง
+    const token = localStorage.getItem("pos_token");
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}` // 🌟 2. แนบกุญแจเข้ากับ Header
+    };
+
     Promise.all([
-      fetch("http://localhost:3001/products").then(res => res.json()),
-      fetch("http://localhost:3001/categories").then(res => res.json())
+      // 🌟 3. ใส่ { headers } พ่วงท้ายไปกับ fetch
+      fetch("http://localhost:3001/products", { headers }).then(res => res.json()),
+      fetch("http://localhost:3001/categories", { headers }).then(res => res.json())
     ]).then(([productsData, categoriesData]) => {
-      setProducts(productsData); setCategories(categoriesData); setIsLoading(false);
+      
+      // 🌟 4. ดัก Array.isArray เพื่อป้องกันระบบพังกรณี Token หมดอายุ
+      setProducts(Array.isArray(productsData) ? productsData : []); 
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []); 
+      setIsLoading(false);
+      
+    }).catch(error => {
+      console.error("ดึงข้อมูลไม่สำเร็จ:", error);
+      setIsLoading(false);
     });
   };
 

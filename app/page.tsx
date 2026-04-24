@@ -45,17 +45,29 @@ export default function Home() {
   const [productFilter, setProductFilter] = useState("all"); 
   const [adjustToppingName, setAdjustToppingName] = useState<string | null>(null);
 
-  useEffect(() => {
+useEffect(() => {
+    // 🌟 1. ดึง Token จากเครื่อง
+    const token = localStorage.getItem("pos_token");
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}` // 🌟 2. แนบกุญแจ
+    };
+
     Promise.all([
-      fetch("http://localhost:3001/products").then(res => res.json()),
-      fetch("http://localhost:3001/toppings").then(res => res.json()),
-      fetch("http://localhost:3001/categories").then(res => res.json())
+      fetch("http://localhost:3001/products", { headers }).then(res => res.json()),
+      fetch("http://localhost:3001/toppings", { headers }).then(res => res.json()),
+      fetch("http://localhost:3001/categories", { headers }).then(res => res.json())
     ]).then(([productsData, toppingsData, categoriesData]) => {
-      setProducts(productsData); setDbToppings(toppingsData); setCategories(categoriesData); setIsLoading(false);
+      // 🌟 3. ป้องกันแอปพัง ดักให้เซ็ตค่าเฉพาะเมื่อข้อมูลเป็น Array เท่านั้น
+      setProducts(Array.isArray(productsData) ? productsData : []); 
+      setDbToppings(Array.isArray(toppingsData) ? toppingsData : []); 
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []); 
+      setIsLoading(false);
     }).catch(console.error);
   }, []);
 
-  const activeCatObj = categories.find(c => c.value === activeCategory);
+  // 🌟 เช็คก่อนว่าเป็น Array จริงๆ ถึงจะใช้ .find() ได้
+  const activeCatObj = Array.isArray(categories) ? categories.find(c => c.value === activeCategory) : undefined;
 
   const openOptionModal = (product: any) => {
     setSelectedProduct(product);
@@ -123,7 +135,15 @@ export default function Home() {
     const orderPayload = { items: cart.map(item => ({ productId: item.id, quantity: item.quantity, price: item.price, size: item.size === "-" ? null : item.size, toppings: item.toppings || null, note: item.note || null })) };
 
     try {
-      const response = await fetch('http://localhost:3001/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderPayload) });
+      const token = localStorage.getItem("pos_token"); // 🌟 ดึง Token
+      const response = await fetch('http://localhost:3001/orders', { 
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // 🌟 แนบกุญแจตอนบันทึกบิล
+        }, 
+        body: JSON.stringify(orderPayload) 
+      });
       if (response.ok) {
         const savedOrder = await response.json();
         setReceiptData({ id: savedOrder.id, dailyNumber: savedOrder.dailyNumber || savedOrder.id || "-", date: new Date().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }), items: [...cart], total: totalPrice, received: numericAmount, change: changeAmount });

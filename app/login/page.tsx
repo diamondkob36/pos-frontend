@@ -14,24 +14,36 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:3001/login", {
+      const response = await fetch("http://localhost:3001/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        // บันทึกข้อมูลพนักงานลงในเว็บบราวเซอร์
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // 🌟 หลังบ้านยุค JWT จะส่งกลับมาเป็น { access_token: "...", user: {...} }
+        // 1. เก็บ Token ลง localStorage
+        localStorage.setItem("pos_token", data.access_token);
+        // 2. เก็บข้อมูล User ลง localStorage
         localStorage.setItem("pos_user", JSON.stringify(data.user));
-        // ล็อกอินสำเร็จ ให้เด้งไปหน้าแคชเชียร์
-        router.push("/");
+
+        alert("เข้าสู่ระบบสำเร็จ!");
+        
+        // ... (โค้ดแยก role เพื่อเปลี่ยนหน้าตามเดิม) ...
+        if (data.user.role === 'manager' || data.user.role === 'supervisor') {
+          router.push("/history");
+        } else {
+          router.push("/");
+        }
+
       } else {
-        setError(data.message);
+        const errorData = await response.json();
+        alert(errorData.message || "รหัสผู้ใช้ หรือ รหัสผ่านไม่ถูกต้อง");
       }
-    } catch (err) {
-      setError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์หลังบ้านได้");
+    } catch (error) {
+      alert("ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ครับ");
     }
   };
 

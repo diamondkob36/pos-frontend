@@ -21,13 +21,25 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (currentUser && (currentUser.role === "manager" || currentUser.role === "supervisor")) {
+      
+      // 🌟 1. ดึงกุญแจ Token จากเครื่อง
+      const token = localStorage.getItem("pos_token");
+      const headers = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // 🌟 2. แนบกุญแจ
+      };
+
       Promise.all([
-        fetch("http://localhost:3001/orders").then(res => res.json()),
-        fetch("http://localhost:3001/toppings").then(res => res.json())
+        // 🌟 3. ใส่ headers เข้าไปใน fetch
+        fetch("http://localhost:3001/orders", { headers }).then(res => res.json()),
+        fetch("http://localhost:3001/toppings", { headers }).then(res => res.json())
       ]).then(([ordersData, toppingsData]) => {
-        setOrders(ordersData); 
-        setDbToppings(toppingsData); 
+        
+        // 🌟 4. ดักจับให้แน่ใจว่าเป็น Array ป้องกันแอปพังเวลา Token หมดอายุหรือมีปัญหา
+        setOrders(Array.isArray(ordersData) ? ordersData : []); 
+        setDbToppings(Array.isArray(toppingsData) ? toppingsData : []); 
         setIsLoading(false);
+        
       }).catch((error) => {
         console.error("ดึงข้อมูลไม่สำเร็จ:", error); 
         setIsLoading(false);

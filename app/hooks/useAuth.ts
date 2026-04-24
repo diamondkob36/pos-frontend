@@ -1,42 +1,47 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
-export function useAuth(allowedRoles?: string | string[]) {
+// กำหนดหน้าตาข้อมูล User (เพิ่ม ID เข้ามาด้วย)
+interface User {
+  id?: number;
+  username: string;
+  name: string;
+  role: string;
+}
+
+export function useAuth(allowedRoles?: string[]) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const router = useRouter();
-  const pathname = usePathname(); // 🌟 ใช้เช็คว่าตอนนี้อยู่หน้าไหน
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  const rolesArray = typeof allowedRoles === 'string' ? [allowedRoles] : allowedRoles;
-  const rolesKey = rolesArray ? rolesArray.join(",") : "";
 
   useEffect(() => {
-    const userStr = localStorage.getItem("pos_user");
+    // 1. ดึงข้อมูล User จาก LocalStorage
+    const storedUser = localStorage.getItem("pos_user");
     
-    if (!userStr) { 
-      // 🌟 ดักไว้ว่า ถ้าไม่ได้อยู่หน้า login ค่อยเด้งไป (กันลูป)
-      if (pathname !== "/login") {
-        router.push("/login"); 
+    // 2. ดึง Token เพื่อเช็คว่ามีกุญแจไหม (ถ้าทำระบบเต็มควรเช็ควันหมดอายุด้วย)
+    const token = localStorage.getItem("pos_token");
+
+    if (storedUser && token) {
+      const parsedUser = JSON.parse(storedUser);
+      setCurrentUser(parsedUser);
+
+      // ถ้าหน้าไหนมีการล็อคสิทธิ์ (allowedRoles) ให้เช็คว่าสิทธิ์ถึงไหม
+      if (allowedRoles && !allowedRoles.includes(parsedUser.role)) {
+        router.push("/"); // สิทธิ์ไม่ถึง เด้งกลับหน้าแคชเชียร์
       }
-      return; 
+    } else {
+      // ถ้าไม่มี User หรือไม่มี Token ให้เด้งไปหน้า Login เสมอ
+      router.push("/login");
     }
-    
-    const user = JSON.parse(userStr);
-    
-    if (rolesArray && rolesArray.length > 0 && !rolesArray.includes(user.role)) {
-      // 🌟 ดักไว้ว่า ถ้าไม่ได้อยู่หน้าแรก (/) ค่อยแจ้งเตือนและเด้งไป (กันลูป)
-      if (pathname !== "/") {
-        alert("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ครับ ❌");
-        router.push("/");
-      }
-      return;
-    }
-    
-    setCurrentUser(user);
-  }, [router, rolesKey, pathname]); 
+  }, [router, allowedRoles]);
 
   const handleLogout = () => {
-    if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
+    if (confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
+      // 🌟 เคลียร์ทั้ง User และ Token ทิ้งตอนออกจากระบบ
       localStorage.removeItem("pos_user");
+      localStorage.removeItem("pos_token");
+      setCurrentUser(null);
       router.push("/login");
     }
   };
