@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-// กำหนดหน้าตาข้อมูล User (เพิ่ม ID เข้ามาด้วย)
 interface User {
   id?: number;
   username: string;
@@ -15,30 +14,35 @@ export function useAuth(allowedRoles?: string[]) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const router = useRouter();
 
+  // 🌟 1. แปลง Array ให้เป็น String ก่อน (เช่น "manager,supervisor") 
+  // เพื่อป้องกัน React มองว่าเป็นข้อมูลใหม่ทุกรอบการ Render
+  const rolesString = allowedRoles ? allowedRoles.join(",") : "";
+
   useEffect(() => {
-    // 1. ดึงข้อมูล User จาก LocalStorage
     const storedUser = localStorage.getItem("pos_user");
-    
-    // 2. ดึง Token เพื่อเช็คว่ามีกุญแจไหม (ถ้าทำระบบเต็มควรเช็ควันหมดอายุด้วย)
     const token = localStorage.getItem("pos_token");
 
     if (storedUser && token) {
       const parsedUser = JSON.parse(storedUser);
-      setCurrentUser(parsedUser);
+      
+      // 🌟 2. อัปเดตข้อมูล User เฉพาะตอนที่ข้อมูลเปลี่ยนไปจริงๆ เท่านั้น (ป้องกันลูปนรก)
+      setCurrentUser((prev) => 
+        prev?.username === parsedUser.username ? prev : parsedUser
+      );
 
-      // ถ้าหน้าไหนมีการล็อคสิทธิ์ (allowedRoles) ให้เช็คว่าสิทธิ์ถึงไหม
+      // เช็คสิทธิ์การเข้าถึงหน้าเว็บ
       if (allowedRoles && !allowedRoles.includes(parsedUser.role)) {
         router.push("/"); // สิทธิ์ไม่ถึง เด้งกลับหน้าแคชเชียร์
       }
     } else {
-      // ถ้าไม่มี User หรือไม่มี Token ให้เด้งไปหน้า Login เสมอ
       router.push("/login");
     }
-  }, [router, allowedRoles]);
+    
+  // 🌟 3. ใช้ rolesString แทน allowedRoles ใน Dependency Array
+  }, [router, rolesString]); 
 
   const handleLogout = () => {
     if (confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
-      // 🌟 เคลียร์ทั้ง User และ Token ทิ้งตอนออกจากระบบ
       localStorage.removeItem("pos_user");
       localStorage.removeItem("pos_token");
       setCurrentUser(null);
