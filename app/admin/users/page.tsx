@@ -24,8 +24,27 @@ export default function UsersPage() {
   }, [currentUser]);
 
   const fetchUsers = async () => {
-    const res = await fetch("http://localhost:3001/users");
-    setUsers(await res.json());
+    try {
+      // 🌟 1. ดึง Token จากตู้เซฟ
+      const token = localStorage.getItem("pos_token"); 
+      
+      // 🌟 2. แนบกุญแจไปกับ fetch
+      const res = await fetch("http://localhost:3001/users", {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        }
+      });
+      
+      const data = await res.json();
+      
+      // 🌟 3. ดักจับ Array ป้องกันหน้าจอขาวเวลา Token หมดอายุ
+      setUsers(Array.isArray(data) ? data : []); 
+      
+    } catch (error) {
+      console.error("ดึงข้อมูลพนักงานไม่สำเร็จ:", error);
+      setUsers([]);
+    }
   };
 
   const openAddModal = () => {

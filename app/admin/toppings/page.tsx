@@ -16,11 +16,25 @@ export default function ToppingsPage() {
 
   const fetchData = () => {
     setIsLoading(true);
+    
+    // 🌟 ดึง Token และตั้งค่า Headers
+    const token = localStorage.getItem("pos_token");
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    };
+
     Promise.all([
-      fetch("http://localhost:3001/toppings").then(res => res.json()),
-      fetch("http://localhost:3001/categories").then(res => res.json())
+      fetch("http://localhost:3001/toppings", { headers }).then(res => res.json()),
+      fetch("http://localhost:3001/categories", { headers }).then(res => res.json())
     ]).then(([toppingsData, categoriesData]) => {
-      setToppings(toppingsData); setCategories(categoriesData); setIsLoading(false);
+      // 🌟 ดัก isArray กันพัง
+      setToppings(Array.isArray(toppingsData) ? toppingsData : []); 
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []); 
+      setIsLoading(false);
+    }).catch(error => {
+      console.error("Error:", error);
+      setIsLoading(false);
     });
   };
 

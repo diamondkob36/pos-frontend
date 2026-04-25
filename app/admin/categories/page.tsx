@@ -15,9 +15,23 @@ export default function CategoriesPage() {
 
   const fetchData = () => {
     setIsLoading(true);
-    fetch("http://localhost:3001/categories").then(res => res.json()).then((categoriesData) => {
-      setCategories(categoriesData); setIsLoading(false);
-    });
+    
+    const token = localStorage.getItem("pos_token");
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    };
+
+    fetch("http://localhost:3001/categories", { headers })
+      .then(res => res.json())
+      .then(data => {
+        setCategories(Array.isArray(data) ? data : []);
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        setIsLoading(false);
+      });
   };
 
   if (!currentUser || !["manager", "supervisor"].includes(currentUser.role)) return null;
