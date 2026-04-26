@@ -39,14 +39,34 @@ export default function ProductManager({ products = [], categories = [], fetchDa
     const url = editingId ? `http://localhost:3001/products/${editingId}` : "http://localhost:3001/products";
     const method = editingId ? "PUT" : "POST";
 
-    await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    // 🌟 1. ดึง Token จากกระเป๋า
+    const token = localStorage.getItem("pos_token");
+
+    await fetch(url, { 
+      method, 
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // 🌟 2. แนบกุญแจเข้าไปใน Headers
+      }, 
+      body: JSON.stringify(payload) 
+    });
+    
     setIsModalOpen(false);
     fetchData();
   };
 
   const toggleAvailable = async (p: any) => {
     const payload = { ...p, isAvailable: !(p.isAvailable ?? true) };
-    await fetch(`http://localhost:3001/products/${p.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const token = localStorage.getItem("pos_token"); // 🌟 ดึง Token
+
+    await fetch(`http://localhost:3001/products/${p.id}`, { 
+      method: "PUT", 
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // 🌟 แนบ Token
+      }, 
+      body: JSON.stringify(payload) 
+    });
     fetchData();
   };
 
@@ -54,7 +74,16 @@ export default function ProductManager({ products = [], categories = [], fetchDa
     const newActive = !(p.isActive ?? true);
     if (confirm(`ต้องการ ${newActive ? 'เปิด' : 'ปิด'} การขายเมนูนี้ใช่หรือไม่?`)) {
       const payload = { ...p, isActive: newActive };
-      await fetch(`http://localhost:3001/products/${p.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const token = localStorage.getItem("pos_token"); // 🌟 ดึง Token
+
+      await fetch(`http://localhost:3001/products/${p.id}`, { 
+        method: "PUT", 
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // 🌟 แนบ Token
+        }, 
+        body: JSON.stringify(payload) 
+      });
       fetchData();
     }
   };
