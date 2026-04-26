@@ -5,9 +5,8 @@ import Sidebar from "../../components/Sidebar";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function UsersPage() {
-  const { currentUser } = useAuth(["manager", "supervisor"]);
-  
   const [users, setUsers] = useState<any[]>([]);
+  const { currentUser } = useAuth(["manager", "supervisor"]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
