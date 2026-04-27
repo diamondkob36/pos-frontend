@@ -152,10 +152,18 @@ export default function UsersPage() {
                       <div key={u.id} className="p-5 border-2 border-gray-100 rounded-2xl bg-white hover:border-gray-300 hover:shadow-sm transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                           <p className="font-black text-xl text-gray-800">{u.name}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-sm font-bold">👤 {u.username}</span>
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
                             <span className={`px-3 py-1 rounded-lg text-sm font-bold ${u.role === 'manager' ? 'bg-purple-100 text-purple-700' : u.role === 'supervisor' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
                               {u.role === 'manager' ? '👑 ผู้จัดการ (Manager)' : u.role === 'supervisor' ? '⭐ หัวหน้างาน (Supervisor)' : '🧑‍🍳 แคชเชียร์'}
+                            </span>
+
+                            {/* 🌟 เพิ่มแถบแสดงสถานะตรงนี้ครับ */}
+                            <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${
+                              u.isActive !== false 
+                                ? 'bg-green-50 text-green-700 border-green-200' 
+                                : 'bg-red-50 text-red-700 border-red-200'
+                            }`}>
+                              {u.isActive !== false ? '● กำลังใช้งาน' : '● ปิดการใช้งาน'}
                             </span>
                           </div>
                         </div>
