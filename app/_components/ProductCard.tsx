@@ -13,8 +13,18 @@ export default function ProductCard({ product, onClick }: { product: any, onClic
         }`}
     >
       <div className="relative">
-        {/* 🌟 ลดความสูงรูปในจอเล็กเป็น h-24 และจอใหญ่เป็น h-32 */}
-        <img src={product.image} alt={product.name} className="w-full h-24 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4 bg-gray-200" />
+        {/* 🌟 เช็คว่ามีรูปภาพหรือไม่ ถ้าไม่มีให้แสดงกล่องสีเทาแทน เพื่อป้องกัน Error src="" */}
+        {product.image ? (
+          <img 
+            src={product.image} 
+            alt={product.name} 
+            className="w-full h-24 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4 bg-gray-200" 
+          />
+        ) : (
+          <div className="w-full h-24 sm:h-32 rounded-lg mb-3 sm:mb-4 bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+            <span className="text-2xl opacity-50">☕</span>
+          </div>
+        )}
         
         {!isAvailable && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-[2px] rounded-lg">
@@ -25,7 +35,6 @@ export default function ProductCard({ product, onClick }: { product: any, onClic
         )}
       </div>
 
-      {/* 🌟 ปรับขนาดฟอนต์ให้สมส่วน */}
       <h3 className={`text-sm sm:text-md font-bold line-clamp-2 leading-tight flex-1 ${isAvailable ? 'text-gray-800' : 'text-gray-500'}`}>
         {product.name}
       </h3>

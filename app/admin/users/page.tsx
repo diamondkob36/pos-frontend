@@ -62,9 +62,36 @@ export default function UsersPage() {
     const url = editingId ? `http://localhost:3001/users/${editingId}` : "http://localhost:3001/users";
     const method = editingId ? "PUT" : "POST";
 
-    await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    // 🌟 1. ดึง Token ออกมาจาก localStorage
+    const token = localStorage.getItem("pos_token");
+
+    await fetch(url, { 
+      method, 
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // 🌟 2. แนบกุญแจไปใน Headers ด้วย
+      }, 
+      body: JSON.stringify(payload) 
+    });
+    
     setIsModalOpen(false);
     fetchUsers();
+  };
+
+  const handleToggleStatus = async (u: any) => {
+    const newStatus = !u.isActive;
+    if (confirm(`ต้องการ ${newStatus ? 'เปิดสิทธิ์' : 'ระงับสิทธิ์'} คุณ ${u.name} ใช่หรือไม่?`)) {
+      const token = localStorage.getItem("pos_token");
+      await fetch(`http://localhost:3001/users/${u.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ isActive: newStatus })
+      });
+      fetchUsers(); // โหลดข้อมูลใหม่
+    }
   };
 
   if (!currentUser || !["manager", "supervisor"].includes(currentUser.role)) return null;
@@ -134,9 +161,30 @@ export default function UsersPage() {
                         </div>
                         <div className="flex w-full md:w-auto gap-3 shrink-0">
                           {canEdit ? (
-                            <button onClick={() => openEditModal(u)} className="flex-1 md:flex-none px-6 py-3 bg-yellow-100 text-yellow-700 rounded-xl font-bold hover:bg-yellow-200 text-md transition-colors">
-                              ✏️ แก้ไข
-                            </button>
+                            <>
+                              <button onClick={() => openEditModal(u)} className="flex-1 md:flex-none px-6 py-3 bg-yellow-100 text-yellow-700 rounded-xl font-bold hover:bg-yellow-200 text-md transition-colors">
+                                ✏️ แก้ไข
+                              </button>
+                              
+                              {/* 🌟 เช็คว่าบัญชีในการ์ดนี้ ตรงกับคนที่ล็อกอินอยู่หรือไม่ */}
+                              {currentUser?.id !== u.id ? (
+                                <button 
+                                  onClick={() => handleToggleStatus(u)} 
+                                  className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold text-md transition-colors ${
+                                    u.isActive !== false // ดักค่า null ให้มองว่าเป็น true (เปิดสิทธิ์) ไว้ก่อน
+                                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  }`}
+                                >
+                                  {u.isActive !== false ? '🚫 ระงับสิทธิ์' : '✅ เปิดสิทธิ์'}
+                                </button>
+                              ) : (
+                                /* 🌟 ถ้าเป็นบัญชีตัวเอง ให้แสดงกล่องข้อความแทนปุ่มกด เพื่อป้องกันการล็อคตัวเอง */
+                                <div className="flex-1 md:flex-none px-6 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold border border-gray-200 text-center text-md cursor-not-allowed">
+                                  👑 บัญชีของคุณ
+                                </div>
+                              )}
+                            </>
                           ) : (
                             <div className="flex-1 md:flex-none px-6 py-3 bg-gray-50 text-gray-400 rounded-xl font-bold border border-gray-100 text-center text-md cursor-not-allowed">
                               🔒 ไม่มีสิทธิ์
