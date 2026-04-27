@@ -15,6 +15,8 @@ export default function UsersPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("cashier");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showHidden, setShowHidden] = useState(false);
+  const hiddenCount = users.filter(u => u.isActive === false).length;
 
   useEffect(() => {
     if (currentUser && (currentUser.role === "manager" || currentUser.role === "supervisor")) {
@@ -106,13 +108,14 @@ export default function UsersPage() {
   // 🌟 กรองข้อมูลตามคำค้นหา แล้วนำมาเรียงลำดับ (Sort) ตามน้ำหนักตำแหน่ง
   const sortedAndFilteredUsers = users
     .filter((u: any) => 
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      u.username.toLowerCase().includes(searchTerm.toLowerCase())
+      (showHidden || u.isActive !== false) && // 🌟 เพิ่มเงื่อนไขซ่อน/แสดง
+      (u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      u.username.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .sort((a: any, b: any) => {
       const weightA = roleWeight[a.role] || 99;
       const weightB = roleWeight[b.role] || 99;
-      return weightA - weightB; // เรียงจากน้อยไปมาก
+      return weightA - weightB;
     });
 
   return (
@@ -134,9 +137,25 @@ export default function UsersPage() {
                   className="w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none focus:border-blue-500 bg-gray-50 focus:bg-white transition-colors font-medium text-gray-800"
                 />
               </div>
-              <button onClick={openAddModal} className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-md text-lg transition-all shrink-0">
-                + เพิ่มพนักงาน
-              </button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                {/* 🌟 ปุ่มแสดงรายการที่ซ่อน */}
+                {hiddenCount > 0 && (
+                  <button 
+                    onClick={() => setShowHidden(!showHidden)}
+                    className={`px-4 py-3 rounded-xl font-bold transition-all border-2 ${
+                      showHidden 
+                      ? 'bg-gray-800 text-white border-gray-800' 
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                    }`}
+                  >
+                    {showHidden ? '🙈 ซ่อนบัญชีที่ถูกระงับ' : `👁️ แสดงบัญชีที่ถูกระงับ (${hiddenCount})`}
+                  </button>
+                )}
+                
+                <button onClick={openAddModal} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-md transition-all">
+                  + เพิ่มพนักงาน
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">

@@ -13,6 +13,8 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCat, setFilterCat] = useState("all");
+  const [showHidden, setShowHidden] = useState(false);
+  const hiddenCount = toppings.filter((t: any) => t.isActive === false).length;
 
   const openAddModal = () => {
     setName(""); setPrice(""); setImage(""); setCategory(""); setIsAvailable(true); setEditingId(null);
@@ -91,7 +93,12 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
   const filteredToppings = toppings.filter((t: any) => {
     const matchSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchCat = filterCat === "all" || t.category === filterCat;
-    return matchSearch && matchCat;
+    
+    // 🌟 เพิ่มเงื่อนไขเช็คสถานะการระงับ
+    const matchActive = showHidden || t.isActive !== false; 
+    
+    // เอาทั้ง 3 เงื่อนไขมาบังคับรวมกัน
+    return matchSearch && matchCat && matchActive;
   });
 
   return (
@@ -102,7 +109,25 @@ export default function ToppingManager({ toppings = [], categories = [], fetchDa
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
           <input type="text" placeholder="ค้นหาท็อปปิ้ง..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none focus:border-purple-500 bg-gray-50 focus:bg-white font-medium text-gray-800 transition-colors" />
         </div>
-        <button onClick={openAddModal} className="w-full sm:w-auto bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md active:scale-95 transition-all shrink-0">+ เพิ่มท็อปปิ้ง</button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          {/* 🌟 ปุ่มแสดง/ซ่อนรายการที่ระงับ */}
+          {hiddenCount > 0 && (
+            <button 
+              onClick={() => setShowHidden(!showHidden)}
+              className={`px-4 py-2 rounded-xl font-bold text-sm transition-all border-2 ${
+                showHidden 
+                  ? 'bg-gray-800 text-white border-gray-800' 
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              {showHidden ? '🙈 ซ่อนรายการที่ปิดการขาย' : `👁️ แสดงรายการที่ปิดการขาย (${hiddenCount})`}
+            </button>
+          )}
+
+          <button onClick={openAddModal} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 shadow-md transition-all">
+            + เพิ่มท็อปปิ้ง
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-4 shrink-0 border-b border-gray-100 mb-4 custom-scrollbar">
