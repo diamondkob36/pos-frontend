@@ -29,14 +29,35 @@ export default function CategoryManager({ categories, fetchData }: any) {
     const url = editingId ? `http://localhost:3001/categories/${editingId}` : "http://localhost:3001/categories";
     const method = editingId ? "PUT" : "POST";
 
-    await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    // 🌟 1. ดึง Token จากกระเป๋า
+    const token = localStorage.getItem("pos_token");
+
+    await fetch(url, { 
+      method, 
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // 🌟 2. แนบกุญแจเข้าไปใน Headers
+      }, 
+      body: JSON.stringify(payload) 
+    });
+    
     setIsModalOpen(false);
     fetchData();
   };
 
   const handleDeleteCategory = async (id: number) => {
     if (confirm("ลบหมวดหมู่นี้? ระวัง! ถ้ามีสินค้าอยู่ในหมวดหมู่นี้อาจทำให้ระบบสับสนได้นะครับ")) {
-      await fetch(`http://localhost:3001/categories/${id}`, { method: "DELETE" });
+      
+      // 🌟 ดึง Token
+      const token = localStorage.getItem("pos_token");
+
+      await fetch(`http://localhost:3001/categories/${id}`, { 
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}` // 🌟 คำสั่ง DELETE ไม่ต้องมี Content-Type ก็ได้ แต่ "ต้องมี Token" เสมอครับ
+        }
+      });
+      
       fetchData();
     }
   };
