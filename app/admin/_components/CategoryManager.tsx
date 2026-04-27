@@ -46,19 +46,25 @@ export default function CategoryManager({ categories, fetchData }: any) {
   };
 
   const handleDeleteCategory = async (id: number) => {
-    if (confirm("ลบหมวดหมู่นี้? ระวัง! ถ้ามีสินค้าอยู่ในหมวดหมู่นี้อาจทำให้ระบบสับสนได้นะครับ")) {
+    if (confirm("ต้องการลบหมวดหมู่นี้ใช่หรือไม่? (ระบบจะลบได้ก็ต่อเมื่อไม่มีเมนูค้างอยู่เท่านั้น)")) {
       
-      // 🌟 ดึง Token
       const token = localStorage.getItem("pos_token");
 
-      await fetch(`http://localhost:3001/categories/${id}`, { 
+      const response = await fetch(`http://localhost:3001/categories/${id}`, { 
         method: "DELETE",
         headers: {
-          "Authorization": `Bearer ${token}` // 🌟 คำสั่ง DELETE ไม่ต้องมี Content-Type ก็ได้ แต่ "ต้องมี Token" เสมอครับ
+          "Authorization": `Bearer ${token}` 
         }
       });
       
-      fetchData();
+      // 🌟 ถ้าหลังบ้านเตะ Error กลับมา (เช่น ติดเงื่อนไขสินค้าค้างอยู่)
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(`❌ ${errorData.message}`); // โชว์ข้อความแจ้งเตือน
+        return; // หยุดทำงาน ไม่ต้องโหลดข้อมูลใหม่
+      }
+      
+      fetchData(); // ถ้าลบสำเร็จ ค่อยโหลดข้อมูลมาแสดงใหม่
     }
   };
 

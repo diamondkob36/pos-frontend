@@ -176,7 +176,7 @@ export default function UsersPage() {
                                       : 'bg-green-100 text-green-700 hover:bg-green-200'
                                   }`}
                                 >
-                                  {u.isActive !== false ? '🚫 ระงับสิทธิ์' : '✅ เปิดสิทธิ์'}
+                                  {u.isActive !== false ? '🚫 ระงับการใช้งาน' : '✅ เปิดการใช้งาน'}
                                 </button>
                               ) : (
                                 /* 🌟 ถ้าเป็นบัญชีตัวเอง ให้แสดงกล่องข้อความแทนปุ่มกด เพื่อป้องกันการล็อคตัวเอง */
