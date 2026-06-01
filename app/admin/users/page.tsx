@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
+import ScrollToTop from "../../_components/ScrollToTop";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function UsersPage() {
@@ -60,39 +61,76 @@ export default function UsersPage() {
 
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { name, username, password, role };
+    
+    // สร้าง payload โดยเช็คว่ามี password หรือไม่
+    const payload: any = { name, username, role };
+    
+    // เพิ่ม password เฉพาะเมื่อมีค่า (สำหรับการสร้างใหม่หรือการแก้ไขที่ต้องการเปลี่ยนรหัส)
+    if (password && password.trim() !== '') {
+      payload.password = password;
+    }
+    
     const url = editingId ? `http://localhost:3001/users/${editingId}` : "http://localhost:3001/users";
     const method = editingId ? "PUT" : "POST";
 
-    // 🌟 1. ดึง Token ออกมาจาก localStorage
     const token = localStorage.getItem("pos_token");
 
-    await fetch(url, { 
-      method, 
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` // 🌟 2. แนบกุญแจไปใน Headers ด้วย
-      }, 
-      body: JSON.stringify(payload) 
-    });
-    
-    setIsModalOpen(false);
-    fetchUsers();
+    try {
+      const response = await fetch(url, { 
+        method, 
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }, 
+        body: JSON.stringify(payload) 
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save user');
+      }
+      
+      setIsModalOpen(false);
+      fetchUsers();
+      
+      // แสดง Toast แทน Alert
+      const { toast } = await import("@/lib/toast");
+      toast.success(editingId ? 'แก้ไขข้อมูลสำเร็จ!' : 'เพิ่มพนักงานสำเร็จ!');
+    } catch (error) {
+      const { toast } = await import("@/lib/toast");
+      toast.error('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    }
   };
 
   const handleToggleStatus = async (u: any) => {
+    const { confirm, toast } = await import("@/lib/toast");
+    
     const newStatus = !u.isActive;
-    if (confirm(`ต้องการ ${newStatus ? 'เปิดสิทธิ์' : 'ระงับสิทธิ์'} คุณ ${u.name} ใช่หรือไม่?`)) {
-      const token = localStorage.getItem("pos_token");
-      await fetch(`http://localhost:3001/users/${u.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ isActive: newStatus })
-      });
-      fetchUsers(); // โหลดข้อมูลใหม่
+    const confirmed = await confirm(
+      `ต้องการ ${newStatus ? 'เปิดสิทธิ์' : 'ระงับสิทธิ์'} คุณ ${u.name} ใช่หรือไม่?`,
+      newStatus ? 'เปิดการใช้งาน' : 'ระงับการใช้งาน'
+    );
+    
+    if (confirmed) {
+      try {
+        const token = localStorage.getItem("pos_token");
+        
+        // ส่งเฉพาะ field ที่ต้องการอัพเดท
+        const payload = { isActive: newStatus };
+        
+        await fetch(`http://localhost:3001/users/${u.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        fetchUsers();
+        toast.success(newStatus ? 'เปิดการใช้งานสำเร็จ!' : 'ระงับการใช้งานสำเร็จ!');
+      } catch (error) {
+        toast.error('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+      }
     }
   };
 
@@ -119,14 +157,14 @@ export default function UsersPage() {
     });
 
   return (
-    <div className="flex min-h-screen bg-gray-50 h-screen overflow-hidden">
+    <div className="flex min-h-screen lg:h-screen bg-gray-50 lg:overflow-hidden">
       <Sidebar />
-      <main className="flex-1 p-8 flex flex-col min-w-0">
-        <div className="max-w-5xl mx-auto w-full h-full flex flex-col">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8 shrink-0">👥 จัดการบัญชีพนักงาน</h1>
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-w-0 lg:h-screen lg:overflow-hidden">
+        <div className="max-w-5xl mx-auto w-full lg:h-full flex flex-col">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8 shrink-0">👥 จัดการบัญชีพนักงาน</h1>
           
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col flex-1 min-h-0">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 border-b pb-4 shrink-0">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-1 lg:min-h-0">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 border-b pb-4 shrink-0">
               <div className="relative w-full sm:max-w-md">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
                 <input 
@@ -158,20 +196,20 @@ export default function UsersPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="lg:flex-1 lg:overflow-y-auto pr-2 custom-scrollbar">
               {sortedAndFilteredUsers.length === 0 ? (
-                <div className="text-center py-20 text-gray-400 font-medium border-2 border-dashed rounded-xl">ไม่พบพนักงานที่ค้นหาครับ</div>
+                <div className="text-center py-12 sm:py-20 text-gray-400 font-medium border-2 border-dashed rounded-xl text-sm sm:text-base">ไม่พบพนักงานที่ค้นหาครับ</div>
               ) : (
-                <div className="space-y-4 pb-8">
+                <div className="space-y-3 sm:space-y-4 pb-4 sm:pb-8">
                   {/* 🌟 วนลูปวาดการ์ดพนักงานที่ถูกจัดเรียงแล้ว */}
                   {sortedAndFilteredUsers.map(u => {
                     const canEdit = currentUser.role === 'manager' || (currentUser.role === 'supervisor' && u.role === 'cashier');
 
                     return (
-                      <div key={u.id} className="p-5 border-2 border-gray-100 rounded-2xl bg-white hover:border-gray-300 hover:shadow-sm transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div key={u.id} className="p-4 sm:p-5 border-2 border-gray-100 rounded-2xl bg-white hover:border-gray-300 hover:shadow-sm transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
                         <div>
-                          <p className="font-black text-xl text-gray-800">{u.name}</p>
-                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <p className="font-black text-lg sm:text-xl text-gray-800">{u.name}</p>
+                          <div className="flex items-center gap-2 mt-2 flex-wrap text-xs sm:text-sm">
                             <span className={`px-3 py-1 rounded-lg text-sm font-bold ${u.role === 'manager' ? 'bg-purple-100 text-purple-700' : u.role === 'supervisor' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
                               {u.role === 'manager' ? '👑 ผู้จัดการ (Manager)' : u.role === 'supervisor' ? '⭐ หัวหน้างาน (Supervisor)' : '🧑‍🍳 แคชเชียร์'}
                             </span>
@@ -186,10 +224,10 @@ export default function UsersPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="flex w-full md:w-auto gap-3 shrink-0">
+                        <div className="flex w-full md:w-auto gap-2 sm:gap-3 shrink-0">
                           {canEdit ? (
                             <>
-                              <button onClick={() => openEditModal(u)} className="flex-1 md:flex-none px-6 py-3 bg-yellow-100 text-yellow-700 rounded-xl font-bold hover:bg-yellow-200 text-md transition-colors">
+                              <button onClick={() => openEditModal(u)} className="flex-1 md:flex-none px-4 sm:px-6 py-2.5 sm:py-3 bg-yellow-100 text-yellow-700 rounded-xl font-bold hover:bg-yellow-200 text-sm sm:text-md transition-colors">
                                 ✏️ แก้ไข
                               </button>
                               
@@ -197,23 +235,24 @@ export default function UsersPage() {
                               {currentUser?.id !== u.id ? (
                                 <button 
                                   onClick={() => handleToggleStatus(u)} 
-                                  className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold text-md transition-colors ${
+                                  className={`flex-1 md:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-md transition-colors ${
                                     u.isActive !== false // ดักค่า null ให้มองว่าเป็น true (เปิดสิทธิ์) ไว้ก่อน
                                       ? 'bg-red-100 text-red-700 hover:bg-red-200' 
                                       : 'bg-green-100 text-green-700 hover:bg-green-200'
                                   }`}
                                 >
-                                  {u.isActive !== false ? '🚫 ระงับการใช้งาน' : '✅ เปิดการใช้งาน'}
+                                  <span className="hidden sm:inline">{u.isActive !== false ? '🚫 ระงับการใช้งาน' : '✅ เปิดการใช้งาน'}</span>
+                                  <span className="sm:hidden">{u.isActive !== false ? '🚫 ระงับ' : '✅ เปิด'}</span>
                                 </button>
                               ) : (
                                 /* 🌟 ถ้าเป็นบัญชีตัวเอง ให้แสดงกล่องข้อความแทนปุ่มกด เพื่อป้องกันการล็อคตัวเอง */
-                                <div className="flex-1 md:flex-none px-6 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold border border-gray-200 text-center text-md cursor-not-allowed">
+                                <div className="flex-1 md:flex-none px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 text-gray-500 rounded-xl font-bold border border-gray-200 text-center text-sm sm:text-md cursor-not-allowed">
                                   👑 บัญชีของคุณ
                                 </div>
                               )}
                             </>
                           ) : (
-                            <div className="flex-1 md:flex-none px-6 py-3 bg-gray-50 text-gray-400 rounded-xl font-bold border border-gray-100 text-center text-md cursor-not-allowed">
+                            <div className="flex-1 md:flex-none px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-50 text-gray-400 rounded-xl font-bold border border-gray-100 text-center text-sm sm:text-md cursor-not-allowed">
                               🔒 ไม่มีสิทธิ์
                             </div>
                           )}
@@ -230,15 +269,15 @@ export default function UsersPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm p-4" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl border border-gray-100" onClick={e => e.stopPropagation()}>
-            <h2 className="text-2xl font-black text-gray-800 mb-6 border-b pb-4">{editingId ? '✏️ แก้ไขข้อมูลพนักงาน' : '+ เพิ่มพนักงานใหม่'}</h2>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-gray-100" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl sm:text-2xl font-black text-gray-800 mb-4 sm:mb-6 border-b pb-3 sm:pb-4">{editingId ? '✏️ แก้ไขข้อมูลพนักงาน' : '+ เพิ่มพนักงานใหม่'}</h2>
             
-            <form onSubmit={handleSaveUser} className="flex flex-col gap-4">
-              <input type="text" placeholder="ชื่อ - นามสกุล" value={name} onChange={e => setName(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white" />
-              <input type="text" placeholder="รหัสผู้ใช้งาน (Username)" value={username} onChange={e => setUsername(e.target.value)} required className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white"/>
-              <input type="password" placeholder={editingId ? "รหัสผ่านใหม่ (เว้นว่างไว้ถ้าไม่เปลี่ยน)" : "รหัสผ่าน"} value={password} onChange={e => setPassword(e.target.value)} required={!editingId} className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white" />
+            <form onSubmit={handleSaveUser} className="flex flex-col gap-3 sm:gap-4">
+              <input type="text" placeholder="ชื่อ - นามสกุล" value={name} onChange={e => setName(e.target.value)} required className="p-3 sm:p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white text-sm sm:text-base" />
+              <input type="text" placeholder="รหัสผู้ใช้งาน (Username)" value={username} onChange={e => setUsername(e.target.value)} required className="p-3 sm:p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white text-sm sm:text-base"/>
+              <input type="password" placeholder={editingId ? "รหัสผ่านใหม่ (เว้นว่างไว้ถ้าไม่เปลี่ยน)" : "รหัสผ่าน"} value={password} onChange={e => setPassword(e.target.value)} required={!editingId} className="p-3 sm:p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white text-sm sm:text-base" />
               
-              <select value={role} onChange={e => setRole(e.target.value)} className="p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white cursor-pointer">
+              <select value={role} onChange={e => setRole(e.target.value)} className="p-3 sm:p-4 border-2 rounded-xl outline-none focus:border-blue-500 font-bold text-gray-800 bg-gray-50 focus:bg-white cursor-pointer text-sm sm:text-base">
                 <option value="cashier">🧑‍🍳 พนักงานหน้าร้าน (Cashier)</option>
                 {currentUser.role === 'manager' && (
                   <>
@@ -248,9 +287,9 @@ export default function UsersPage() {
                 )}
               </select>
 
-              <div className="flex gap-4 mt-6 pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors">ยกเลิก</button>
-                <button type="submit" className="flex-1 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 transition-all">
+              <div className="flex gap-3 sm:gap-4 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-100 text-gray-600 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-gray-200 transition-colors">ยกเลิก</button>
+                <button type="submit" className="flex-1 bg-blue-600 text-white py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-blue-700 shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 transition-all">
                   💾 บันทึก
                 </button>
               </div>
@@ -258,6 +297,9 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      {/* ปุ่มเลื่อนขึ้นด้านบน */}
+      <ScrollToTop />
     </div>
   );
 }

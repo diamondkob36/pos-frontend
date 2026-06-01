@@ -7,6 +7,7 @@ import CartPanel from "./_components/CartPanel";
 import CheckoutModal from "./_components/CheckoutModal";
 import ProductOptionModal from "./_components/ProductOptionModal";
 import ToppingModal from "./_components/ToppingModal";
+import ScrollToTop from "./_components/ScrollToTop";
 
 import { useAuth } from "./hooks/useAuth";
 import { useCart } from "./hooks/useCart";
@@ -125,8 +126,12 @@ useEffect(() => {
   const changeAmount = numericAmount - totalPrice;
   const isEnoughCash = numericAmount >= totalPrice;
 
-  const handleCheckoutClick = () => {
-    if (cart.length === 0) return alert("ยังไม่มีสินค้าในตะกร้าครับ!");
+  const handleCheckoutClick = async () => {
+    if (cart.length === 0) {
+      const { toast } = await import("@/lib/toast");
+      toast.warning("ยังไม่มีสินค้าในตะกร้า");
+      return;
+    }
     setAmountReceived(""); setIsConfirming(true);
   };
 
@@ -135,21 +140,28 @@ useEffect(() => {
     const orderPayload = { items: cart.map(item => ({ productId: item.id, quantity: item.quantity, price: item.price, size: item.size === "-" ? null : item.size, toppings: item.toppings || null, note: item.note || null })) };
 
     try {
-      const token = localStorage.getItem("pos_token"); // 🌟 ดึง Token
+      const token = localStorage.getItem("pos_token");
       const response = await fetch('http://localhost:3001/orders', { 
         method: 'POST', 
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // 🌟 แนบกุญแจตอนบันทึกบิล
+          'Authorization': `Bearer ${token}`
         }, 
         body: JSON.stringify(orderPayload) 
       });
+      
       if (response.ok) {
         const savedOrder = await response.json();
         setReceiptData({ id: savedOrder.id, dailyNumber: savedOrder.dailyNumber || savedOrder.id || "-", date: new Date().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }), items: [...cart], total: totalPrice, received: numericAmount, change: changeAmount });
         setIsConfirming(false);
-      } else alert("เกิดข้อผิดพลาดในการบันทึกบิลครับ ❌");
-    } catch (error) { alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์หลังบ้านได้ครับ"); }
+      } else {
+        const { toast } = await import("@/lib/toast");
+        toast.error("เกิดข้อผิดพลาดในการบันทึกบิล");
+      }
+    } catch (error) {
+      const { toast } = await import("@/lib/toast");
+      toast.error("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+    }
   };
 
   const handleBackdropClick = () => {
@@ -223,6 +235,9 @@ useEffect(() => {
         confirmAndSaveOrder={confirmAndSaveOrder} setReceiptData={setReceiptData} 
         clearCart={clearCart} handleBackdropClick={handleBackdropClick}
       />
+
+      {/* ปุ่มเลื่อนขึ้นด้านบน */}
+      <ScrollToTop />
 
     </div>
   );

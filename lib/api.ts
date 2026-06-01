@@ -22,40 +22,73 @@ export const getAuthHeaders = (): HeadersInit => {
 };
 
 /**
- * Fetch API พร้อม Error Handling
+ * ล้าง Session และ Redirect ไปหน้า Login
+ */
+const clearSessionAndRedirect = async () => {
+  if (typeof window !== 'undefined') {
+    // ตรวจสอบว่าอยู่ในหน้า Login หรือไม่
+    if (window.location.pathname === '/login') {
+      localStorage.removeItem('pos_token');
+      localStorage.removeItem('pos_user');
+      sessionStorage.clear();
+      return; // ไม่ต้องแสดง Toast หรือ Redirect
+    }
+
+    // ล้าง Token และ User ทั้งหมด
+    localStorage.removeItem('pos_token');
+    localStorage.removeItem('pos_user');
+    sessionStorage.clear();
+    
+    // แสดง Toast แทน Alert
+    const { toast } = await import('./toast');
+    toast.error('🔒 Session หมดอายุ กรุณาเข้าสู่ระบบใหม่', 2000);
+    
+    // Redirect หลัง Toast แสดง
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 500);
+  }
+};
+
+/**
+ * Fetch API พร้อม Error Handling และ Auto Logout
  */
 export const fetchAPI = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_URL}${endpoint}`;
   
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...getAuthHeaders(),
-      ...options.headers,
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
+    });
 
-  // Handle 401 Unauthorized - Token หมดอายุหรือไม่ถูกต้อง
-  if (response.status === 401) {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('pos_token');
-      localStorage.removeItem('pos_user');
-      window.location.href = '/login';
+    // Handle 401 Unauthorized - Token หมดอายุหรือไม่ถูกต้อง
+    if (response.status === 401) {
+      clearSessionAndRedirect();
+      throw new Error('Session หมดอายุ กรุณาเข้าสู่ระบบใหม่');
     }
-    throw new Error('Session หมดอายุ กรุณาเข้าสู่ระบบใหม่');
-  }
 
-  // Handle 403 Forbidden - ไม่มีสิทธิ์เข้าถึง
-  if (response.status === 403) {
-    throw new Error('คุณไม่มีสิทธิ์เข้าถึงฟังก์ชันนี้');
-  }
+    // Handle 403 Forbidden - ไม่มีสิทธิ์เข้าถึง
+    if (response.status === 403) {
+      throw new Error('คุณไม่มีสิทธิ์เข้าถึงฟังก์ชันนี้');
+    }
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'เกิดข้อผิดพลาด');
-  }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'เกิดข้อผิดพลาด');
+    }
 
-  return response.json();
+    return response.json();
+  } catch (error: any) {
+    // ถ้าเป็น Network Error หรือ Token ไม่ถูกต้อง
+    if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+    }
+    throw error;
+  }
 };
 
 /**

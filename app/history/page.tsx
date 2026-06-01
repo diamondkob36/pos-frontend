@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import Sidebar from "../components/Sidebar";
+import ScrollToTop from "../_components/ScrollToTop";
 
 import StatCards from "./_components/StatCards";
 import SalesCharts from "./_components/SalesCharts";
@@ -113,8 +114,12 @@ export default function HistoryPage() {
   const mostSoldTopping = Object.values(toppingStats).sort((a, b) => b.quantity - a.quantity)[0]; 
   const topToppingsByRevenue = Object.values(toppingStats).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
-  const exportToExcel = () => {
-    if (filteredOrders.length === 0) return alert("ไม่มีข้อมูลให้ Export ในช่วงเวลานี้ครับ");
+  const exportToExcel = async () => {
+    if (filteredOrders.length === 0) {
+      const { toast } = await import("@/lib/toast");
+      toast.warning("ไม่มีข้อมูลให้ Export ในช่วงเวลานี้");
+      return;
+    }
 
     const dates = filteredOrders.map(o => new Date(o.createdAt).getTime());
     const dateRangeText = `ข้อมูลยอดขายตั้งแต่วันที่ ${formatDate(new Date(Math.min(...dates)).toISOString())} ถึง ${formatDate(new Date(Math.max(...dates)).toISOString())}`;
@@ -214,6 +219,9 @@ export default function HistoryPage() {
 
         </div>
       </main>
+
+      {/* ปุ่มเลื่อนขึ้นด้านบน */}
+      <ScrollToTop />
     </div>
   );
 }

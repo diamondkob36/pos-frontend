@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { clearSession, saveAuthData } from "@/lib/auth-utils";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
+
+  // ล้าง Session เมื่อเข้าหน้า Login
+  useEffect(() => {
+    clearSession();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,27 +29,28 @@ export default function LoginPage() {
       if (response.ok) {
         const data = await response.json();
         
-        // 🌟 หลังบ้านยุค JWT จะส่งกลับมาเป็น { access_token: "...", user: {...} }
-        // 1. เก็บ Token ลง localStorage
-        localStorage.setItem("pos_token", data.access_token);
-        // 2. เก็บข้อมูล User ลง localStorage
-        localStorage.setItem("pos_user", JSON.stringify(data.user));
+        // บันทึก Token และ User ลง localStorage
+        saveAuthData(data.access_token, data.user);
 
-        alert("เข้าสู่ระบบสำเร็จ!");
+        // แสดง Toast แทน Alert
+        const { toast } = await import("@/lib/toast");
+        toast.success("เข้าสู่ระบบสำเร็จ!", 1500);
         
-        // ... (โค้ดแยก role เพื่อเปลี่ยนหน้าตามเดิม) ...
-        if (data.user.role === 'manager' || data.user.role === 'supervisor') {
-          router.push("/history");
-        } else {
-          router.push("/");
-        }
+        // Redirect ตาม Role
+        setTimeout(() => {
+          if (data.user.role === 'manager' || data.user.role === 'supervisor') {
+            router.push("/history");
+          } else {
+            router.push("/");
+          }
+        }, 500);
 
       } else {
         const errorData = await response.json();
-        alert(errorData.message || "รหัสผู้ใช้ หรือ รหัสผ่านไม่ถูกต้อง");
+        setError(errorData.message || "รหัสผู้ใช้ หรือ รหัสผ่านไม่ถูกต้อง");
       }
     } catch (error) {
-      alert("ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ครับ");
+      setError("ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง");
     }
   };
 
@@ -71,6 +78,7 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               className="w-full p-4 border-2 border-gray-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all font-medium text-gray-700"
               required 
+              autoComplete="username"
             />
           </div>
           <div>
@@ -81,6 +89,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-4 border-2 border-gray-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all font-medium text-gray-700"
               required 
+              autoComplete="current-password"
             />
           </div>
           <button 
