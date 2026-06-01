@@ -1,6 +1,6 @@
 /**
  * 🎨 Toast Notification System
- * ระบบแจ้งเตือนแบบ Modern Toast
+ * ระบบแจ้งเตือนแบบ Modern Toast - ปรับให้เข้ากับธีมระบบ
  */
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -18,11 +18,27 @@ const icons = {
   info: 'ℹ️',
 };
 
-const colors = {
-  success: 'bg-green-500',
-  error: 'bg-red-500',
-  warning: 'bg-orange-500',
-  info: 'bg-blue-500',
+const styles = {
+  success: {
+    bg: 'bg-gradient-to-r from-green-500 to-green-600',
+    border: 'border-green-400',
+    icon: 'bg-white/20',
+  },
+  error: {
+    bg: 'bg-gradient-to-r from-red-500 to-red-600',
+    border: 'border-red-400',
+    icon: 'bg-white/20',
+  },
+  warning: {
+    bg: 'bg-gradient-to-r from-orange-500 to-orange-600',
+    border: 'border-orange-400',
+    icon: 'bg-white/20',
+  },
+  info: {
+    bg: 'bg-gradient-to-r from-blue-500 to-blue-600',
+    border: 'border-blue-400',
+    icon: 'bg-white/20',
+  },
 };
 
 /**
@@ -32,18 +48,27 @@ export const toast = {
   show: ({ message, type = 'info', duration = 3000 }: ToastOptions) => {
     // สร้าง Toast Element
     const toastEl = document.createElement('div');
-    toastEl.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-[9999] animate-slide-in-right max-w-md`;
+    const style = styles[type];
+    
+    toastEl.className = `fixed top-4 right-4 ${style.bg} text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-4 z-[9999] animate-slide-in-right max-w-md border-2 ${style.border} backdrop-blur-sm`;
     toastEl.innerHTML = `
-      <span class="text-2xl">${icons[type]}</span>
-      <span class="font-medium">${message}</span>
+      <div class="${style.icon} w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+        <span class="text-2xl">${icons[type]}</span>
+      </div>
+      <span class="font-bold text-base leading-tight">${message}</span>
+      <button class="ml-2 hover:bg-white/20 rounded-lg p-1 transition-colors shrink-0" onclick="this.parentElement.remove()">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     `;
 
     // เพิ่ม Animation
-    const style = document.createElement('style');
-    style.textContent = `
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
       @keyframes slide-in-right {
         from {
-          transform: translateX(100%);
+          transform: translateX(120%);
           opacity: 0;
         }
         to {
@@ -53,24 +78,24 @@ export const toast = {
       }
       @keyframes slide-out-right {
         from {
-          transform: translateX(0);
+          transform: translateX(0) scale(1);
           opacity: 1;
         }
         to {
-          transform: translateX(100%);
+          transform: translateX(120%) scale(0.95);
           opacity: 0;
         }
       }
       .animate-slide-in-right {
-        animation: slide-in-right 0.3s ease-out;
+        animation: slide-in-right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
       .animate-slide-out-right {
         animation: slide-out-right 0.3s ease-in;
       }
     `;
     if (!document.querySelector('#toast-styles')) {
-      style.id = 'toast-styles';
-      document.head.appendChild(style);
+      styleEl.id = 'toast-styles';
+      document.head.appendChild(styleEl);
     }
 
     // เพิ่มเข้า DOM
@@ -80,7 +105,9 @@ export const toast = {
     setTimeout(() => {
       toastEl.classList.add('animate-slide-out-right');
       setTimeout(() => {
-        document.body.removeChild(toastEl);
+        if (document.body.contains(toastEl)) {
+          document.body.removeChild(toastEl);
+        }
       }, 300);
     }, duration);
   },
@@ -109,21 +136,23 @@ export const confirm = (message: string, title = 'ยืนยันการท
   return new Promise((resolve) => {
     // สร้าง Overlay
     const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] flex items-center justify-center p-4 animate-fade-in';
+    overlay.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998] flex items-center justify-center p-4 animate-fade-in';
 
     // สร้าง Dialog
     const dialog = document.createElement('div');
-    dialog.className = 'bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scale-in';
+    dialog.className = 'bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-scale-in border border-gray-100';
     dialog.innerHTML = `
       <div class="text-center">
-        <div class="text-5xl mb-4">❓</div>
-        <h3 class="text-xl font-bold text-gray-800 mb-2">${title}</h3>
-        <p class="text-gray-600 mb-6">${message}</p>
+        <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+          <span class="text-4xl">❓</span>
+        </div>
+        <h3 class="text-2xl font-black text-gray-800 mb-3">${title}</h3>
+        <p class="text-gray-600 mb-8 text-base leading-relaxed">${message}</p>
         <div class="flex gap-3">
-          <button id="cancel-btn" class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all">
+          <button id="cancel-btn" class="flex-1 px-5 py-4 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all text-base">
             ยกเลิก
           </button>
-          <button id="confirm-btn" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all">
+          <button id="confirm-btn" class="flex-1 px-5 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 text-base">
             ยืนยัน
           </button>
         </div>
@@ -151,7 +180,7 @@ export const confirm = (message: string, title = 'ยืนยันการท
         animation: fade-in 0.2s ease-out;
       }
       .animate-scale-in {
-        animation: scale-in 0.3s ease-out;
+        animation: scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
     `;
     if (!document.querySelector('#confirm-styles')) {
@@ -167,7 +196,12 @@ export const confirm = (message: string, title = 'ยืนยันการท
     const cancelBtn = dialog.querySelector('#cancel-btn');
 
     const cleanup = () => {
-      document.body.removeChild(overlay);
+      overlay.classList.add('opacity-0');
+      setTimeout(() => {
+        if (document.body.contains(overlay)) {
+          document.body.removeChild(overlay);
+        }
+      }, 200);
     };
 
     confirmBtn?.addEventListener('click', () => {
