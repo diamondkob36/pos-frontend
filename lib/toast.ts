@@ -20,24 +20,20 @@ const icons = {
 
 const styles = {
   success: {
-    bg: 'bg-gradient-to-r from-green-500 to-green-600',
-    border: 'border-green-400',
-    icon: 'bg-white/20',
+    bg: 'bg-gray-800',
+    border: 'border-gray-700',
   },
   error: {
-    bg: 'bg-gradient-to-r from-red-500 to-red-600',
-    border: 'border-red-400',
-    icon: 'bg-white/20',
+    bg: 'bg-gray-800',
+    border: 'border-gray-700',
   },
   warning: {
-    bg: 'bg-gradient-to-r from-orange-500 to-orange-600',
-    border: 'border-orange-400',
-    icon: 'bg-white/20',
+    bg: 'bg-gray-800',
+    border: 'border-gray-700',
   },
   info: {
-    bg: 'bg-gradient-to-r from-blue-500 to-blue-600',
-    border: 'border-blue-400',
-    icon: 'bg-white/20',
+    bg: 'bg-gray-800',
+    border: 'border-gray-700',
   },
 };
 
@@ -50,12 +46,10 @@ export const toast = {
     const toastEl = document.createElement('div');
     const style = styles[type];
     
-    toastEl.className = `fixed top-4 right-4 ${style.bg} text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-4 z-[9999] animate-slide-in-right max-w-md border-2 ${style.border} backdrop-blur-sm`;
+    toastEl.className = `fixed top-4 right-4 ${style.bg} text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-4 z-[9999] animate-slide-in-right max-w-md border-2 ${style.border}`;
     toastEl.innerHTML = `
-      <div class="${style.icon} w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
-        <span class="text-2xl">${icons[type]}</span>
-      </div>
-      <span class="font-bold text-base leading-tight">${message}</span>
+      <span class="text-3xl shrink-0">${icons[type]}</span>
+      <span class="font-bold text-base leading-tight flex-1">${message}</span>
       <button class="ml-2 hover:bg-white/20 rounded-lg p-1 transition-colors shrink-0" onclick="this.parentElement.remove()">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
@@ -143,9 +137,7 @@ export const confirm = (message: string, title = 'ยืนยันการท
     dialog.className = 'bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-scale-in border border-gray-100';
     dialog.innerHTML = `
       <div class="text-center">
-        <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg">
-          <span class="text-4xl">❓</span>
-        </div>
+        <div class="text-6xl mb-5">❓</div>
         <h3 class="text-2xl font-black text-gray-800 mb-3">${title}</h3>
         <p class="text-gray-600 mb-8 text-base leading-relaxed">${message}</p>
         <div class="flex gap-3">
